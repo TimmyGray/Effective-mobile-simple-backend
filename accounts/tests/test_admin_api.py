@@ -19,6 +19,16 @@ class AdminApiTests(APITestCase):
         token = self.client.get("/api/auth/csrf").data["csrfToken"]
         return str(token)
 
+    def _registration_payload(self, email: str) -> dict[str, str]:
+        return {
+            "email": email,
+            "first_name": "Plain",
+            "last_name": "User",
+            "middle_name": "Member",
+            "password": "StrongPass123!",
+            "password_confirm": "StrongPass123!",
+        }
+
     def test_admin_roles_unauthenticated_returns_401(self) -> None:
         response = self.client.get("/api/auth/admin/roles")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -27,7 +37,7 @@ class AdminApiTests(APITestCase):
         csrf = self._csrf()
         self.client.post(
             "/api/auth/register",
-            {"email": "plain@example.com", "password": "StrongPass123!"},
+            self._registration_payload("plain@example.com"),
             format="json",
             HTTP_X_CSRFTOKEN=csrf,
         )

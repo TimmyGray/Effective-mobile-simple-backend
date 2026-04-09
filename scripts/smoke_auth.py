@@ -80,7 +80,14 @@ def main() -> int:
         opener,
         "POST",
         f"{auth_base}/register",
-        {"email": email, "password": password},
+        {
+            "email": email,
+            "first_name": "Smoke",
+            "last_name": "Tester",
+            "middle_name": "Runner",
+            "password": password,
+            "password_confirm": password,
+        },
         headers=csrf_headers,
     )
     assert_status("register", register.status, 201)

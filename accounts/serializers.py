@@ -8,12 +8,28 @@ from accounts.models import User
 
 
 class RegisterSerializer(serializers.ModelSerializer[User]):
+    first_name = serializers.CharField(required=True, allow_blank=False, max_length=150)
+    last_name = serializers.CharField(required=True, allow_blank=False, max_length=150)
+    middle_name = serializers.CharField(required=True, allow_blank=False, max_length=150)
     password = serializers.CharField(write_only=True, min_length=8)
+    password_confirm = serializers.CharField(write_only=True, min_length=8)
 
     class Meta:
         model = User
-        fields = ("id", "email", "password")
+        fields = ("id", "email", "first_name", "last_name", "middle_name", "password", "password_confirm")
         read_only_fields = ("id",)
+
+    def validate(self, attrs: dict) -> dict:
+        """
+        AI Annotation:
+        - Purpose: Enforce password confirmation and non-empty name fields at registration boundary.
+        - Inputs: Incoming registration payload with names, email, password and confirmation.
+        - Outputs: Validated attrs ready for user creation.
+        - Failure modes: Raises ValidationError when passwords differ.
+        """
+        if attrs["password"] != attrs["password_confirm"]:
+            raise serializers.ValidationError({"password_confirm": "Passwords must match."})
+        return attrs
 
     def validate_password(self, value: str) -> str:
         """
@@ -37,10 +53,8 @@ class RegisterSerializer(serializers.ModelSerializer[User]):
         - Side effects: Persists a user record and stores a hashed password in the database.
         - Security notes: Uses custom manager create flow to avoid raw password persistence.
         """
-        return User.objects.create_user(
-            email=validated_data["email"],
-            password=validated_data["password"],
-        )
+        validated_data.pop("password_confirm", None)
+        return User.objects.create_user(**validated_data)
 
 
 class LoginSerializer(serializers.Serializer):
@@ -71,7 +85,7 @@ class LoginSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer[User]):
     class Meta:
         model = User
-        fields = ("id", "email", "first_name", "last_name")
+        fields = ("id", "email", "first_name", "last_name", "middle_name")
 
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer[User]):
@@ -80,7 +94,7 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer[User]):
 
     class Meta:
         model = User
-        fields = ("email", "first_name", "last_name", "password", "current_password")
+        fields = ("email", "first_name", "last_name", "middle_name", "password", "current_password")
 
     def validate_email(self, value: str) -> str:
         """

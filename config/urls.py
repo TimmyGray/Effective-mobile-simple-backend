@@ -8,4 +8,5 @@ urlpatterns = [
     path("health/live", health_live, name="health-live"),
     path("health/ready", health_ready, name="health-ready"),
     path("api/auth/", include("accounts.urls")),
+    path("api/resources/", include("accounts.mock_urls")),
 ]

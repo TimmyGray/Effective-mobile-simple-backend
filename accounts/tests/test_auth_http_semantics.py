@@ -33,7 +33,14 @@ class AuthHttpSemanticsTests(APITestCase):
         csrf = self.client.get("/api/auth/csrf").data["csrfToken"]
         response = self.client.post(
             "/api/auth/register",
-            {"email": "newuser@example.com", "password": "StrongPass123!"},
+            {
+                "email": "newuser@example.com",
+                "first_name": "Alex",
+                "last_name": "Ivanov",
+                "middle_name": "Petrovich",
+                "password": "StrongPass123!",
+                "password_confirm": "StrongPass123!",
+            },
             format="json",
             HTTP_X_CSRFTOKEN=str(csrf),
         )

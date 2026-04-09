@@ -117,21 +117,21 @@ Base prefix: `/api/auth`
 
 ### Public routes
 
-| Method | Route | Auth | Description |
-|---|---|---|---|
-| `GET` | `/api/auth/csrf` | Public | Returns CSRF token for state-changing requests. |
-| `POST` | `/api/auth/register` | Public | Registers a new user. |
-| `POST` | `/api/auth/login` | Public | Authenticates user and starts a session. |
+| Method | Route | Auth | Body params | Query params | Description |
+| --- | --- | --- | --- | --- | --- |
+| `GET` | `/api/auth/csrf` | Public | `—` | `—` | Returns CSRF token for state-changing requests. |
+| `POST` | `/api/auth/register` | Public | `email`, `first_name`, `last_name`, `middle_name`, `password`, `password_confirm` | `—` | Registers a new user. |
+| `POST` | `/api/auth/login` | Public | `email`, `password` | `—` | Authenticates user and starts a session. |
 
 ### Authenticated user routes
 
-| Method | Route | Policy action | Description |
-|---|---|---|---|
-| `POST` | `/api/auth/logout` | `auth:logout` | Ends current session. |
-| `GET` | `/api/auth/me` | `auth:me` | Returns current user profile. |
-| `PATCH` | `/api/auth/me` | `auth:profile_update` | Updates own profile and optional password. |
-| `DELETE` | `/api/auth/me` | `auth:account_deactivate` | Soft-deletes account (`is_active=false`) and logs out. |
-| `GET` | `/api/auth/admin-probe` | `auth:admin_probe` | Probe endpoint for policy/semantics checks. |
+| Method | Route | Policy action | Body params | Query params | Description |
+| --- | --- | --- | --- | --- | --- |
+| `POST` | `/api/auth/logout` | `auth:logout` | `—` | `—` | Ends current session. |
+| `GET` | `/api/auth/me` | `auth:me` | `—` | `—` | Returns current user profile. |
+| `PATCH` | `/api/auth/me` | `auth:profile_update` | Optional: `email`, `first_name`, `last_name`, `middle_name`, `password`, `current_password` | `—` | Updates own profile and optional password. |
+| `DELETE` | `/api/auth/me` | `auth:account_deactivate` | `—` | `—` | Soft-deletes account (`is_active=false`) and logs out. |
+| `GET` | `/api/auth/admin-probe` | `auth:admin_probe` | `—` | `—` | Probe endpoint for policy/semantics checks. |
 
 ### Admin management routes
 
@@ -141,33 +141,39 @@ All require:
 - staff user,
 - policy allow for `admin:manage`.
 
-| Method | Route | Description |
-|---|---|---|
-| `GET` / `POST` | `/api/auth/admin/roles` | List or create roles. |
-| `GET` / `PATCH` / `DELETE` | `/api/auth/admin/roles/{id}` | Read/update/delete role. |
-| `GET` / `POST` | `/api/auth/admin/access-permissions` | List or create `(resource, action)` permissions. |
-| `GET` / `PATCH` / `DELETE` | `/api/auth/admin/access-permissions/{id}` | Read/update/delete permission. |
-| `POST` | `/api/auth/admin/roles/{role_id}/permissions` | Grant permission to role. |
-| `DELETE` | `/api/auth/admin/roles/{role_id}/permissions/{permission_id}` | Revoke permission from role. |
-| `POST` | `/api/auth/admin/users/{user_id}/roles` | Grant role to user. |
-| `DELETE` | `/api/auth/admin/users/{user_id}/roles/{role_id}` | Revoke role from user. |
-| `GET` / `POST` | `/api/auth/admin/policy-rules` | List or create policy rules. |
-| `GET` / `PATCH` / `DELETE` | `/api/auth/admin/policy-rules/{id}` | Read/update/delete policy rule. |
+| Method | Route | Body params | Query params | Description |
+| --- | --- | --- | --- | --- |
+| `GET` / `POST` | `/api/auth/admin/roles` | `POST`: `name`, `description` | `—` | List or create roles. |
+| `GET` / `PATCH` / `DELETE` | `/api/auth/admin/roles/{id}` | `PATCH`: `name` (optional), `description` (optional) | `—` | Read/update/delete role. |
+| `GET` / `POST` | `/api/auth/admin/access-permissions` | `POST`: `resource`, `action` | `—` | List or create `(resource, action)` permissions. |
+| `GET` / `PATCH` / `DELETE` | `/api/auth/admin/access-permissions/{id}` | `PATCH`: `resource` (optional), `action` (optional) | `—` | Read/update/delete permission. |
+| `POST` | `/api/auth/admin/roles/{role_id}/permissions` | `access_permission_id` | `—` | Grant permission to role. |
+| `DELETE` | `/api/auth/admin/roles/{role_id}/permissions/{permission_id}` | `—` | `—` | Revoke permission from role. |
+| `POST` | `/api/auth/admin/users/{user_id}/roles` | `role_id` | `—` | Grant role to user. |
+| `DELETE` | `/api/auth/admin/users/{user_id}/roles/{role_id}` | `—` | `—` | Revoke role from user. |
+| `GET` / `POST` | `/api/auth/admin/policy-rules` | `POST`: `resource`, `action`, `subject_type`, `subject_value`, `is_allowed` | `—` | List or create policy rules. |
+| `GET` / `PATCH` / `DELETE` | `/api/auth/admin/policy-rules/{id}` | `PATCH`: any of `resource`, `action`, `subject_type`, `subject_value`, `is_allowed` | `—` | Read/update/delete policy rule. |
 
 ### Operational routes
 
-| Method | Route | Description |
-|---|---|---|
-| `GET` | `/health/live` | Liveness probe (process is up). |
-| `GET` | `/health/ready` | Readiness probe (DB connectivity check). |
-| `GET` | `/admin/` | Django admin UI. |
+| Method | Route | Body params | Query params | Description |
+| --- | --- | --- | --- | --- |
+| `GET` | `/health/live` | `—` | `—` | Liveness probe (process is up). |
+| `GET` | `/health/ready` | `—` | `—` | Readiness probe (DB connectivity check). |
+| `GET` | `/admin/` | `—` | `—` | Django admin UI. |
+
+### Mock business resource routes
+
+| Method | Route | Policy action | Body params | Query params | Description |
+| --- | --- | --- | --- | --- | --- |
+| `GET` | `/api/resources/widgets` | `widgets:list` | `—` | `—` | Returns a mock widget list when allowed by policy/matrix. |
 
 ## Database Entities
 
 Primary entities from `accounts/models.py`:
 
 | Entity | Purpose | Key fields / constraints |
-|---|---|---|
+| --- | --- | --- |
 | `User` | Custom auth user (`AUTH_USER_MODEL`) | `email` unique; email-based login; soft delete via `is_active`. |
 | `Role` | Named security role | `name` unique. |
 | `AccessPermission` | Grantable capability | Unique `(resource, action)`. |
@@ -196,7 +202,7 @@ Primary entities from `accounts/models.py`:
 After `python manage.py migrate`, demo users are seeded (for local/recruitment demos only):
 
 | Email | Password | Typical behavior |
-|---|---|---|
+| --- | --- | --- |
 | `demo.member@example.com` | `DemoShowcase2026!` | Authenticated, member-level matrix grants. |
 | `demo.staff@example.com` | `DemoShowcase2026!` | Staff user, can access admin management APIs when policy allows. |
 | `demo.plain@example.com` | `DemoShowcase2026!` | Authenticated with minimal/default access. |
@@ -245,4 +251,3 @@ For CSRF/session flow and `401`/`403` probes:
 - `docs/RELIABILITY.md` - reliability and error handling
 - `docs/CONVENTIONS.md` - coding standards
 - `docs/QUALITY_SCORE.md` - current quality metrics
-

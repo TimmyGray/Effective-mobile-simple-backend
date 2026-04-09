@@ -32,16 +32,29 @@ class AuthFlowTests(APITestCase):
         self.assertIsNotNone(token)
         return str(token)
 
+    def _registration_payload(self, email: str, password: str = "StrongPass123!") -> dict[str, str]:
+        return {
+            "email": email,
+            "first_name": "Ivan",
+            "last_name": "Petrov",
+            "middle_name": "Sergeevich",
+            "password": password,
+            "password_confirm": password,
+        }
+
     def test_register_login_me_logout_happy_path(self) -> None:
         csrf_token = self._get_csrf_token()
         register_response = self.client.post(
             "/api/auth/register",
-            {"email": "user@example.com", "password": "StrongPass123!"},
+            self._registration_payload("user@example.com"),
             format="json",
             HTTP_X_CSRFTOKEN=csrf_token,
         )
         self.assertEqual(register_response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(register_response.data["email"], "user@example.com")
+        self.assertEqual(register_response.data["first_name"], "Ivan")
+        self.assertEqual(register_response.data["last_name"], "Petrov")
+        self.assertEqual(register_response.data["middle_name"], "Sergeevich")
 
         created_user = User.objects.get(email="user@example.com")
         self.assertTrue(created_user.check_password("StrongPass123!"))
@@ -76,6 +89,19 @@ class AuthFlowTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertIn("detail", response.data)
+
+    def test_register_rejects_mismatched_password_confirmation(self) -> None:
+        csrf_token = self._get_csrf_token()
+        payload = self._registration_payload("mismatch@example.com")
+        payload["password_confirm"] = "DifferentStrongPass123!"
+        response = self.client.post(
+            "/api/auth/register",
+            payload,
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("password_confirm", response.data)
 
     def test_me_unauthenticated_returns_401(self) -> None:
         response = self.client.get("/api/auth/me")
@@ -159,7 +185,7 @@ class AuthFlowTests(APITestCase):
         csrf_token = self._get_csrf_token()
         self.client.post(
             "/api/auth/register",
-            {"email": "old@example.com", "password": "StrongPass123!"},
+            self._registration_payload("old@example.com"),
             format="json",
             HTTP_X_CSRFTOKEN=csrf_token,
         )
@@ -184,7 +210,7 @@ class AuthFlowTests(APITestCase):
         csrf_token = self._get_csrf_token()
         self.client.post(
             "/api/auth/register",
-            {"email": "pw@example.com", "password": "StrongPass123!"},
+            self._registration_payload("pw@example.com"),
             format="json",
             HTTP_X_CSRFTOKEN=csrf_token,
         )
@@ -224,7 +250,7 @@ class AuthFlowTests(APITestCase):
         csrf_token = self._get_csrf_token()
         self.client.post(
             "/api/auth/register",
-            {"email": "del@example.com", "password": "StrongPass123!"},
+            self._registration_payload("del@example.com"),
             format="json",
             HTTP_X_CSRFTOKEN=csrf_token,
         )
@@ -252,7 +278,7 @@ class AuthFlowTests(APITestCase):
         csrf_token = self._get_csrf_token()
         self.client.post(
             "/api/auth/register",
-            {"email": "stale@example.com", "password": "StrongPass123!"},
+            self._registration_payload("stale@example.com"),
             format="json",
             HTTP_X_CSRFTOKEN=csrf_token,
         )

@@ -62,6 +62,7 @@ class UserManager(BaseUserManager["User"]):
 class User(AbstractUser):
     username = models.CharField(max_length=150, blank=True)
     email = models.EmailField(unique=True)
+    middle_name = models.CharField(max_length=150, blank=True, default="")
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS: list[str] = []

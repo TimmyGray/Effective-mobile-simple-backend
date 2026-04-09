@@ -28,12 +28,22 @@ class AuditEventLoggingTests(APITestCase):
         r = self.client.get("/api/auth/csrf")
         return str(r.data["csrfToken"])
 
+    def _registration_payload(self, email: str) -> dict[str, str]:
+        return {
+            "email": email,
+            "first_name": "Audit",
+            "last_name": "User",
+            "middle_name": "Trace",
+            "password": "StrongPass123!",
+            "password_confirm": "StrongPass123!",
+        }
+
     def test_register_emits_audit_json(self) -> None:
         csrf = self._csrf()
         with self.assertLogs("accounts.audit", level="INFO") as captured:
             self.client.post(
                 "/api/auth/register",
-                {"email": "audit1@example.com", "password": "StrongPass123!"},
+                self._registration_payload("audit1@example.com"),
                 format="json",
                 HTTP_X_CSRFTOKEN=csrf,
             )

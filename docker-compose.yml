@@ -1,0 +1,20 @@
+# Local PostgreSQL for development. Not for production.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: effective_mobile
+      POSTGRES_PASSWORD: effective_mobile_dev
+      POSTGRES_DB: effective_mobile
+    ports:
+      - "5432:5432"
+    volumes:
+      - effective_mobile_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U effective_mobile -d effective_mobile"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  effective_mobile_pgdata:

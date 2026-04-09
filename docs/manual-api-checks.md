@@ -2,7 +2,7 @@
 
 Use this guide when you want to exercise the API from a terminal without pytest. It complements automated tests in `accounts/tests/` and the smoke script `scripts/smoke_auth.py`.
 
-**Prerequisites**
+## Prerequisites
 
 - Django dev server running (for example `python manage.py runserver 127.0.0.1:8000`).
 - Base URL examples below use `http://127.0.0.1:8000`; substitute your host and port.
@@ -10,7 +10,7 @@ Use this guide when you want to exercise the API from a terminal without pytest.
 ## Auth semantics (quick reference)
 
 | Situation | Typical status |
-|-----------|------------------|
+| --------- | -------------- |
 | No session on a protected endpoint | `401 Unauthorized` |
 | Session present but policy denies the action | `403 Forbidden` |
 | Staff-only admin API as non-staff | `403 Forbidden` |
@@ -47,7 +47,7 @@ Register and log in (replace email/password):
 ```bash
 curl -s -c cookies.txt -b cookies.txt -X POST "$BASE/api/auth/register" \
   -H "Content-Type: application/json" -H "X-CSRFToken: $CSRF" \
-  -d '{"email":"you@example.com","password":"StrongPass123!"}'
+  -d '{"email":"you@example.com","first_name":"Ivan","last_name":"Petrov","middle_name":"Sergeevich","password":"StrongPass123!","password_confirm":"StrongPass123!"}'
 
 CSRF=$(curl -s -c cookies.txt -b cookies.txt "$BASE/api/auth/csrf" | python -c "import sys,json; print(json.load(sys.stdin)['csrfToken'])")
 
@@ -102,7 +102,7 @@ Use `GET "$BASE/api/auth/me"` with the same `--session` to verify `200` when log
 ## Helper scripts
 
 | Script | Purpose |
-|--------|---------|
+| ------ | ------- |
 | `scripts/smoke_auth.py` | End-to-end register → login → me → logout; asserts status codes. |
 | `scripts/probe_auth_semantics.py` | Prints labeled `401` / `403` probes for quick manual verification. |
 

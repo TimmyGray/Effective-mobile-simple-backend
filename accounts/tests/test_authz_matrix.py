@@ -41,11 +41,21 @@ class AuthzDecisionMatrixApiTests(APITestCase):
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         return str(r.data["csrfToken"])
 
+    def _registration_payload(self, email: str) -> dict[str, str]:
+        return {
+            "email": email,
+            "first_name": "Nikolay",
+            "last_name": "Sidorov",
+            "middle_name": "Ivanovich",
+            "password": "StrongPass123!",
+            "password_confirm": "StrongPass123!",
+        }
+
     def test_patch_me_403_when_explicit_user_deny_on_profile_update(self) -> None:
         csrf = self._csrf()
         self.client.post(
             "/api/auth/register",
-            {"email": "nopatch@example.com", "password": "StrongPass123!"},
+            self._registration_payload("nopatch@example.com"),
             format="json",
             HTTP_X_CSRFTOKEN=csrf,
         )
@@ -74,7 +84,7 @@ class AuthzDecisionMatrixApiTests(APITestCase):
         csrf = self._csrf()
         self.client.post(
             "/api/auth/register",
-            {"email": "nologout@example.com", "password": "StrongPass123!"},
+            self._registration_payload("nologout@example.com"),
             format="json",
             HTTP_X_CSRFTOKEN=csrf,
         )
