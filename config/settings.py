@@ -1,19 +1,19 @@
 import os
 from pathlib import Path
+
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
+
+from config.env import validate_runtime_environment
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
+validate_runtime_environment()
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
-if not SECRET_KEY:
-    raise ImproperlyConfigured("DJANGO_SECRET_KEY must be set")
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "").strip()
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 ALLOWED_HOSTS = [host for host in os.getenv("ALLOWED_HOSTS", "").split(",") if host]
-if not DEBUG and not ALLOWED_HOSTS:
-    raise ImproperlyConfigured("ALLOWED_HOSTS must be set when DEBUG is false")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -79,7 +79,14 @@ STATIC_URL = "static/"
 SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "true").lower() == "true"
 CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "true").lower() == "true"
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000"))
+try:
+    SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000"))
+except ValueError as exc:
+    raise ImproperlyConfigured(
+        "SECURE_HSTS_SECONDS must be a non-negative integer"
+    ) from exc
+if SECURE_HSTS_SECONDS < 0:
+    raise ImproperlyConfigured("SECURE_HSTS_SECONDS must be >= 0")
 SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_HSTS_SECONDS > 0
 SECURE_HSTS_PRELOAD = SECURE_HSTS_SECONDS > 0
 
