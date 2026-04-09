@@ -6,9 +6,22 @@ from rest_framework.test import APITestCase
 
 from accounts.models import AuthPolicyRule
 from accounts.policy import PolicyDecision, decide, is_allowed
+from accounts.views import LoginView, RegisterView
 
 
 User = get_user_model()
+
+# ScopedRateThrottle reads DRF settings cached at import time; clear view throttles in AuthFlowTests.
+_REST_FRAMEWORK_NO_THROTTLE = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "accounts.authentication.SessionAuthentication401",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "accounts.permissions.EnforcedAuthzPermission",
+    ],
+    "DEFAULT_THROTTLE_CLASSES": [],
+    "DEFAULT_THROTTLE_RATES": {},
+}
 
 
 class PolicyDecideTests(TestCase):
@@ -131,7 +144,22 @@ class PolicyDecideTests(TestCase):
         self.assertIsInstance(decision, PolicyDecision)
 
 
+@override_settings(REST_FRAMEWORK=_REST_FRAMEWORK_NO_THROTTLE)
 class AuthFlowTests(APITestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls._register_throttle_classes = RegisterView.throttle_classes
+        cls._login_throttle_classes = LoginView.throttle_classes
+        RegisterView.throttle_classes = []
+        LoginView.throttle_classes = []
+
+    @classmethod
+    def tearDownClass(cls):
+        RegisterView.throttle_classes = cls._register_throttle_classes
+        LoginView.throttle_classes = cls._login_throttle_classes
+        super().tearDownClass()
+
     def _get_csrf_token(self) -> str:
         response = self.client.get("/api/auth/csrf")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -262,12 +290,137 @@ class AuthFlowTests(APITestCase):
         )
         self.assertEqual(final_response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_patch_profile_updates_email(self) -> None:
+        csrf_token = self._get_csrf_token()
+        self.client.post(
+            "/api/auth/register",
+            {"email": "old@example.com", "password": "StrongPass123!"},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        self.client.post(
+            "/api/auth/login",
+            {"email": "old@example.com", "password": "StrongPass123!"},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        patch = self.client.patch(
+            "/api/auth/me",
+            {"email": "new@example.com"},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        self.assertEqual(patch.status_code, status.HTTP_200_OK)
+        self.assertEqual(patch.data["email"], "new@example.com")
+        user = User.objects.get(pk=patch.data["id"])
+        self.assertEqual(user.email, "new@example.com")
 
+    def test_patch_password_requires_current_password(self) -> None:
+        csrf_token = self._get_csrf_token()
+        self.client.post(
+            "/api/auth/register",
+            {"email": "pw@example.com", "password": "StrongPass123!"},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        self.client.post(
+            "/api/auth/login",
+            {"email": "pw@example.com", "password": "StrongPass123!"},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        bad = self.client.patch(
+            "/api/auth/me",
+            {"password": "NewStrongPass456!"},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        self.assertEqual(bad.status_code, status.HTTP_400_BAD_REQUEST)
+        ok = self.client.patch(
+            "/api/auth/me",
+            {
+                "password": "NewStrongPass456!",
+                "current_password": "StrongPass123!",
+            },
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        self.assertEqual(ok.status_code, status.HTTP_200_OK)
+        self.client.post("/api/auth/logout", HTTP_X_CSRFTOKEN=csrf_token)
+        login_new = self.client.post(
+            "/api/auth/login",
+            {"email": "pw@example.com", "password": "NewStrongPass456!"},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        self.assertEqual(login_new.status_code, status.HTTP_200_OK)
+
+    def test_delete_account_soft_deletes_and_ends_session(self) -> None:
+        csrf_token = self._get_csrf_token()
+        self.client.post(
+            "/api/auth/register",
+            {"email": "del@example.com", "password": "StrongPass123!"},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        self.client.post(
+            "/api/auth/login",
+            {"email": "del@example.com", "password": "StrongPass123!"},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        deleted = self.client.delete("/api/auth/me", HTTP_X_CSRFTOKEN=csrf_token)
+        self.assertEqual(deleted.status_code, status.HTTP_204_NO_CONTENT)
+        me_after = self.client.get("/api/auth/me")
+        self.assertEqual(me_after.status_code, status.HTTP_401_UNAUTHORIZED)
+        user = User.objects.get(email="del@example.com")
+        self.assertFalse(user.is_active)
+        re_login = self.client.post(
+            "/api/auth/login",
+            {"email": "del@example.com", "password": "StrongPass123!"},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        self.assertEqual(re_login.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_me_after_deactivation_without_request_returns_401(self) -> None:
+        csrf_token = self._get_csrf_token()
+        self.client.post(
+            "/api/auth/register",
+            {"email": "stale@example.com", "password": "StrongPass123!"},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        self.client.post(
+            "/api/auth/login",
+            {"email": "stale@example.com", "password": "StrongPass123!"},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        user = User.objects.get(email="stale@example.com")
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+        stale = self.client.get("/api/auth/me")
+        self.assertEqual(stale.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+@override_settings(REST_FRAMEWORK=_REST_FRAMEWORK_NO_THROTTLE)
 class AuthHttpSemanticsTests(APITestCase):
     """
     B-C3 regression: unauthenticated clients must receive 401 (not 403) on protected routes;
     authenticated-but-forbidden clients receive 403.
     """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls._register_throttle_classes = RegisterView.throttle_classes
+        RegisterView.throttle_classes = []
+
+    @classmethod
+    def tearDownClass(cls):
+        RegisterView.throttle_classes = cls._register_throttle_classes
+        super().tearDownClass()
 
     def test_csrf_unauthenticated_returns_200(self) -> None:
         response = self.client.get("/api/auth/csrf")

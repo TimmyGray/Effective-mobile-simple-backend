@@ -7,7 +7,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.permissions import EnforcedAuthzPermission
-from accounts.serializers import LoginSerializer, RegisterSerializer, UserSerializer
+from accounts.serializers import (
+    LoginSerializer,
+    RegisterSerializer,
+    UserProfileUpdateSerializer,
+    UserSerializer,
+)
 
 
 class RegisterView(APIView):
@@ -71,7 +76,22 @@ class LogoutView(APIView):
 class MeView(APIView):
     permission_classes = [EnforcedAuthzPermission]
     policy_resource = "auth"
-    policy_action = "me"
+
+    @property
+    def policy_action(self) -> str:
+        """
+        AI Annotation:
+        - Purpose: Map HTTP method to distinct auth policy actions on the same URL.
+        - Inputs: `self.request.method` set before permission checks.
+        - Outputs: Policy action key for `auth` resource.
+        - Security notes: Separates read, update, and account-deactivation permissions.
+        """
+        method = self.request.method.upper()
+        if method == "PATCH":
+            return "profile_update"
+        if method == "DELETE":
+            return "account_deactivate"
+        return "me"
 
     def get(self, request: Request) -> Response:
         """
@@ -82,6 +102,40 @@ class MeView(APIView):
         - Security notes: Access depends on centralized authz permission with explicit policy action.
         """
         return Response(UserSerializer(request.user).data, status=status.HTTP_200_OK)
+
+    def patch(self, request: Request) -> Response:
+        """
+        AI Annotation:
+        - Purpose: Update the authenticated user's profile fields and optional password.
+        - Inputs: JSON body validated by UserProfileUpdateSerializer (partial).
+        - Outputs: Updated user JSON with HTTP 200.
+        - Side effects: Writes user row; may re-hash password.
+        - Security notes: Requires `auth:profile_update` policy; password change needs current password.
+        """
+        serializer = UserProfileUpdateSerializer(
+            request.user,
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+
+    def delete(self, request: Request) -> Response:
+        """
+        AI Annotation:
+        - Purpose: Soft-delete the current account and end the session immediately.
+        - Inputs: Authenticated DELETE; no body required.
+        - Outputs: HTTP 204 empty body.
+        - Side effects: Sets `is_active=False`, saves user, calls `logout` to revoke session.
+        - Security notes: Requires `auth:account_deactivate`; user cannot authenticate afterward.
+        """
+        user = request.user
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+        logout(request)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class AdminProbeView(APIView):
