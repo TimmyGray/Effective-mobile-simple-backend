@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from accounts.models import AccessPermission, AuthPolicyRule, Role
-
-User = get_user_model()
 
 
 class RoleSerializer(serializers.ModelSerializer[Role]):
