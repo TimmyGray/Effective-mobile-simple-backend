@@ -8,9 +8,9 @@ Baseline captured during `/setup-workflow` on 2026-04-09.
 
 | Suite | Files | Tests | Pass Rate |
 |-------|-------|-------|-----------|
-| Backend (`pytest`, `accounts/`, `config/tests`) | 3 | 61 | 100% |
+| Backend (`pytest`, `accounts/`, `config/tests`) | 3 | 67 | 100% |
 | Frontend | N/A | N/A | N/A |
-| **Total** | 2 | 58 | 100% |
+| **Total** | 3 | 67 | 100% |
 
 ## Lint / Type / Build
 
@@ -38,7 +38,7 @@ Baseline captured during `/setup-workflow` on 2026-04-09.
 | High | 0 | 3 |
 | Medium | 0 | 4 |
 | Low | 0 | 2 |
-| Features | 2 | 1 |
+| Features | 0 | 3 |
 
 ## Sweep History
 
@@ -50,3 +50,4 @@ Baseline captured during `/setup-workflow` on 2026-04-09.
 - 2026-04-09 (B-M3): `requirements-dev.txt` + `pyproject.toml` + GitHub Actions; `ruff check .`, `mypy -p config`, `pytest`, `manage.py check` — all clean with `DJANGO_SECRET_KEY` + `DEBUG=true`.
 - 2026-04-09 (post-merge sweep, B-L1 / PR #11 on `main`): `pytest` — 58 passed; `accounts/tests.py` ~886 lines (split deferred per sweep rules); maintenance cadence sweep counter reset; no code changes.
 - 2026-04-09 (post-merge B-L2 PR #12 + Phase 12 audit cadence): `pytest` — 61 passed; `ruff` / `mypy -p config` / `manage.py check` clean; `ARCHITECTURE.md` updated for health endpoints; tech-debt tracker B-L2 marked done; maintenance `features_since_last_audit` threshold met and reset.
+- 2026-04-09 (post-merge FEAT-3 / PR #14 on `main`): `pytest` — 67 passed; `ruff` / `mypy -p config` clean; `accounts/tests.py` ~785 lines (split deferred); tech-debt tracker FEAT-3 marked done; maintenance sweep cadence threshold met and counter reset.
