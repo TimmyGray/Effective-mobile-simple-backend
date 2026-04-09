@@ -97,6 +97,7 @@ class AuthPolicyRule(models.Model):
 class Role(models.Model):
     """
     Named security role; users are bound via `UserRole` and granted capabilities via `RolePermission`.
+    Referenced by `AuthPolicyRule` subject_type=role and by the RBAC matrix.
     """
 
     name = models.CharField(max_length=100, unique=True)
@@ -108,7 +109,7 @@ class Role(models.Model):
 
 class AccessPermission(models.Model):
     """
-    Grantable capability: a (resource, action) pair evaluated by `policy.decide()`.
+    Grantable capability: a (resource, action) pair evaluated by `policy.decide()` via the matrix.
     """
 
     resource = models.CharField(max_length=100)
