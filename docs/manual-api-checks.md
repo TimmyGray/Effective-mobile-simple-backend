@@ -1,6 +1,6 @@
 # Manual API checks (curl and HTTPie)
 
-Use this guide when you want to exercise the API from a terminal without pytest. It complements automated tests in `accounts/tests.py` and the smoke script `scripts/smoke_auth.py`.
+Use this guide when you want to exercise the API from a terminal without pytest. It complements automated tests in `accounts/tests/` and the smoke script `scripts/smoke_auth.py`.
 
 **Prerequisites**
 
