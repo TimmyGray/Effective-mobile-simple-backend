@@ -1,242 +1,248 @@
-# Claude Code Workflow Kit
+# Effective Mobile Simple Backend
 
-A production-grade autonomous development workflow for [Claude Code](https://claude.ai/claude-code). Copy this into any project to get a self-improving, agent-driven development loop with automated maintenance, quality enforcement, and documentation gardening.
+Backend service for a recruitment-style task: custom authentication and authorization with explicit policy evaluation, admin management APIs, structured audit logging, and operational health checks.
 
-## What This Is
+## Project Goals
 
-This is a **generic, reusable workflow system** extracted from a battle-tested production project. It turns Claude Code into an autonomous development agent that can:
+- Build a custom auth/authz layer on top of Django + DRF (not framework defaults only).
+- Enforce clear `401` vs `403` semantics on protected APIs.
+- Support full user lifecycle: register, login, logout, profile update, soft delete.
+- Provide admin APIs to manage roles, permissions, user-role bindings, and policy rules.
+- Keep behavior verifiable through automated tests and reproducible manual API probes.
 
-- Pick tasks from a backlog and implement them end-to-end
-- Create PRs, monitor CI, self-review, and auto-merge
-- Continuously scan for technical debt and fix it
-- Keep documentation in sync with code
-- Learn from its own mistakes and promote findings into lint rules
-- Generate and delegate to project-aware specialist subagents (e.g., frontend, architect)
+## Tech Stack
 
-## The Workflow Loop
+- Python 3.12+
+- Django
+- Django REST Framework
+- PostgreSQL (production/CI baseline) with SQLite fallback for local runs
+- pytest + pytest-django, Ruff, mypy (config package)
 
-```
-User idea → /add-feature → backlog → /develop-feature → /validate → /review-pr → PR merge
-                                           ↑                                         |
-                                           |                                         ↓
-                                   /audit-service ← ← ← ← ← ← ← ← ← /retrospective
-                                   /doc-garden + /sweep (continuous)
-```
+## High-Level Architecture
 
-## Quick Start
+### Module map
 
-### 1. Copy into your project
+- `config/`
+  - Project settings, env validation, DB selection, root routes, health endpoints.
+- `accounts/`
+  - Authentication endpoints (`register`, `login`, `logout`, `me`, `csrf`).
+  - Authorization enforcement (`EnforcedAuthzPermission`, policy engine).
+  - Admin RBAC/policy management endpoints.
+  - Audit logging and correlation ID middleware.
 
-```bash
-# Clone the kit
-git clone https://github.com/TimmyGray/claude-code-workflow-kit.git /tmp/workflow-kit
+### Request and authorization flow
 
-# Copy into your project (from your project root)
-cp -r /tmp/workflow-kit/.claude .
-cp -r /tmp/workflow-kit/docs .
-cp /tmp/workflow-kit/CLAUDE.md .
-cp /tmp/workflow-kit/ARCHITECTURE.md .
+1. Request enters Django middleware stack, including `CorrelationIdMiddleware`.
+2. DRF authenticates via `SessionAuthentication401`.
+3. DRF permissions run `EnforcedAuthzPermission`.
+4. Permission delegates to `accounts.policy.decide(user, resource, action)`:
+   - explicit deny rules first,
+   - explicit allow rules second,
+   - RBAC matrix grants third,
+   - default deny otherwise.
+5. API returns:
+   - `401 Unauthorized` if identity is missing/invalid,
+   - `403 Forbidden` if identity is valid but policy denies access.
 
-# Clean up
-rm -rf /tmp/workflow-kit
-```
+Health endpoints (`/health/live`, `/health/ready`) are plain Django views and bypass DRF auth flow.
 
-### 2. Run the setup command
+## Getting Started
 
-Open Claude Code in your project and run:
+### 1) Prerequisites
 
-```
-/setup-workflow
-```
+- Python 3.12+
+- pip
+- Optional: PostgreSQL 16+ (if not using SQLite fallback)
 
-This command will:
-1. **Analyze your project** — read package files, source code, configs, git history
-2. **Ask clarifying questions** — about deployment, team size, priorities, pain points
-3. **Fill all documentation templates** — ARCHITECTURE.md, CONVENTIONS.md, SECURITY.md, etc.
-4. **Adapt command files** — update validation commands, dev server ports, review checks
-5. **Create initial backlog** — populate tech-debt-tracker with discovered issues and your priorities
-6. **Run baseline validation** — capture initial quality metrics
-7. **Commit everything** — ready to go
+### 2) Create virtual environment
 
-### 3. Generate agents and start developing
+### PowerShell (Windows)
 
-```
-/generate-agents   # Create project-aware specialist agents (recommended)
-/add-feature       # Add a task to the backlog
-/develop-feature   # Pick the next task and implement it autonomously
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
 ```
 
-## Commands Reference
-
-| Command | What It Does | When to Use |
-|---------|-------------|-------------|
-| `/setup-workflow` | Analyze project, fill docs, create roadmap | First time only |
-| `/generate-agents` | Generate project-aware specialist agents | After setup or major tech changes |
-| `/rollback-agents` | Undo command patches and optionally remove agents | If agent integration causes issues |
-| `/add-feature` | Interactive backlog intake with duplicate detection | When you have a new idea |
-| `/develop-feature [ID]` | Full autonomous dev: implement → test → PR → review → merge | To implement any task |
-| `/validate` | Run lint + typecheck + test + build + staged completeness | Before any PR |
-| `/review-pr [PR#]` | Multi-agent review (security, quality, patterns, tests) | After implementation |
-| `/audit-service` | Comprehensive codebase audit + metrics update | Every 5 features (auto) |
-| `/sweep` | Scan for principle violations, create micro-fix PRs | Every 3 features (auto) |
-| `/doc-garden` | Fix stale/broken docs, validate cross-links | With audits (auto) |
-| `/retrospective` | Analyze patterns, promote findings to lint rules | Every 10 features (auto) |
-| `/i18n-dev` | i18n development guidelines | When adding UI strings |
-| `/update-roadmap` | Research-driven strategic roadmap refresh | Quarterly or when roadmap feels stale |
-
-## File Structure
-
-```
-your-project/
-├── CLAUDE.md                          # Entry point (~60 lines, links to everything)
-├── ARCHITECTURE.md                    # System architecture
-├── docs/
-│   ├── CONVENTIONS.md                 # Code conventions (enforced by lint)
-│   ├── WORKFLOW.md                    # How the autonomous loop works
-│   ├── SECURITY.md                    # Security model + threat model
-│   ├── RELIABILITY.md                 # Error handling + logging
-│   ├── PRODUCT_SENSE.md               # Vision, personas, feature priorities
-│   ├── PLANS.md                       # Phased roadmap
-│   ├── QUALITY_SCORE.md               # Metrics dashboard (auto-updated)
-│   ├── DESIGN.md                      # UI/UX design system (frontend)
-│   ├── design-docs/
-│   │   └── core-beliefs.md            # 12 engineering principles
-│   ├── exec-plans/
-│   │   ├── tech-debt-tracker.md       # Machine-readable task backlog
-│   │   ├── maintenance-cadence.json   # Maintenance state machine
-│   │   ├── active-work.json           # Running agents registry (gitignored)
-│   │   ├── active/                    # In-progress execution plans
-│   │   └── completed/                 # Archived execution plans
-│   └── references/                    # Framework/API reference docs
-├── .claude/
-│   ├── agents/                        # Generated specialist subagents (committed)
-│   │   ├── _manifest.json             # Registry of available agents
-│   │   ├── _patches.json              # Registry of patched commands
-│   │   └── *-agent/                   # Subagent personas and capability files
-│   └── commands/
-│       ├── setup-workflow.md          # First-time project setup
-│       ├── generate-agents.md         # Specialist agent generator
-│       ├── rollback-agents.md         # Rollback agent patches
-│       ├── add-feature.md             # Backlog intake
-│       ├── develop-feature.md         # Autonomous feature dev (12 phases)
-│       ├── review-pr.md              # Multi-agent PR review
-│       ├── validate.md               # Validation suite
-│       ├── sweep.md                  # Golden principles sweep
-│       ├── audit-service.md          # Codebase audit
-│       ├── doc-garden.md             # Documentation gardening
-│       ├── retrospective.md          # Workflow retrospective
-│       ├── i18n-dev.md               # i18n guidelines
-│       └── update-roadmap.md        # Strategic roadmap refresh
-└── .gitignore                         # Includes active-work.json, worktrees
-```
-
-## Key Design Decisions
-
-### Progressive Disclosure
-`CLAUDE.md` is a ~60-line table of contents, not an encyclopedia. Agents read it first, then dive into specific docs as needed. This keeps context windows clean.
-
-### Repository as System of Record
-All decisions, conventions, and state live in the repo. No Slack decisions, no tribal knowledge. The maintenance-cadence.json is committed to git so any agent in any session knows what maintenance is due.
-
-### Encode Taste into Tooling
-When a review finding appears 3+ times, `/retrospective` promotes it to a lint rule with a remediation message. Human taste is captured once, then enforced mechanically forever.
-
-### Self-Improving Loop
-```
-Agent makes mistake → /review-pr catches it → pitfalls.md records it →
-/retrospective analyzes patterns → ESLint rule created → mistake impossible
-```
-
-### Parallel Execution
-Multiple `/develop-feature` agents can run simultaneously:
-- **Worktree isolation**: Each agent gets its own working directory
-- **Port allocation**: Slot-based system prevents dev server conflicts
-- **Active work registry**: Prevents two agents from picking the same task
-
-## Adapting to Your Stack
-
-The kit is designed for **any tech stack**. The `/setup-workflow` command handles adaptation, but here's what gets customized:
-
-| What | Default | Adapted To |
-|------|---------|-----------|
-| Validation commands | `npm run validate` | Your project's lint/test/build commands |
-| Dev server ports | 3001 (backend), 5173 (frontend) | Your project's ports |
-| Lint config references | ESLint | Your linter (Ruff, Clippy, etc.) |
-| Test patterns | `*.spec.ts`, `*.test.tsx` | Your test file patterns |
-| i18n system | react-i18next | Your i18n library (or disabled) |
-| Architecture tests | TypeScript imports | Your language's module system |
-
-## Maintenance Cadence
-
-The system auto-maintains itself. After every feature merge, `/develop-feature` Phase 12 checks:
-
-- **Every 3 features**: `/sweep` scans for principle violations
-- **Every 5 features**: `/audit-service` + `/doc-garden` run comprehensive checks
-- **Every 10 features**: `/retrospective` analyzes patterns and promotes lint rules
-
-Thresholds are configurable in `docs/exec-plans/maintenance-cadence.json`.
-
-## Philosophy
-
-This workflow is built on these beliefs:
-
-1. **Humans steer, agents execute** — you decide what to build, agents handle the how
-2. **When agents fail, fix the environment** — improve tooling and docs, not agent prompts
-3. **Corrections are cheap, waiting is expensive** — merge fast, fix fast
-4. **Automate everything that can be automated** — lint rules > code review comments
-5. **Small, focused changes** — one PR = one concern, max ~10 files
-
-## License
-
-MIT
-
-## Backend auth API (B-C1)
-
-This repository now includes a minimal Django + DRF backend implementing:
-
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `POST /api/auth/logout`
-- `GET /api/auth/me`
-
-### Local run
+### Bash (Linux/macOS/Git Bash)
 
 ```bash
 python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-copy .env.example .env
+source .venv/bin/activate
+```
+
+### 3) Install dependencies
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+```
+
+### 4) Configure environment
+
+PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Bash:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` for your local setup:
+
+- `DJANGO_SECRET_KEY`
+- `DEBUG=true` for local dev
+- `ALLOWED_HOSTS`
+- DB config (`DATABASE_URL` or `POSTGRES_*` / `PG*` vars)
+- cookie/HSTS/security flags
+
+### 5) Apply migrations and run
+
+```bash
 python manage.py migrate
-python manage.py runserver
+python manage.py runserver 127.0.0.1:8000
 ```
 
-### Run tests
+## Environment and database behavior
+
+- If `DATABASE_URL` is set with `postgres://` or `postgresql://`, PostgreSQL is used.
+- If `POSTGRES_HOST` or `PGHOST` is set, PostgreSQL is used from discrete vars.
+- Otherwise SQLite is used at `db.sqlite3`.
+
+## API Routes
+
+Base prefix: `/api/auth`
+
+### Public routes
+
+| Method | Route | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/auth/csrf` | Public | Returns CSRF token for state-changing requests. |
+| `POST` | `/api/auth/register` | Public | Registers a new user. |
+| `POST` | `/api/auth/login` | Public | Authenticates user and starts a session. |
+
+### Authenticated user routes
+
+| Method | Route | Policy action | Description |
+|---|---|---|---|
+| `POST` | `/api/auth/logout` | `auth:logout` | Ends current session. |
+| `GET` | `/api/auth/me` | `auth:me` | Returns current user profile. |
+| `PATCH` | `/api/auth/me` | `auth:profile_update` | Updates own profile and optional password. |
+| `DELETE` | `/api/auth/me` | `auth:account_deactivate` | Soft-deletes account (`is_active=false`) and logs out. |
+| `GET` | `/api/auth/admin-probe` | `auth:admin_probe` | Probe endpoint for policy/semantics checks. |
+
+### Admin management routes
+
+All require:
+
+- authenticated session,
+- staff user,
+- policy allow for `admin:manage`.
+
+| Method | Route | Description |
+|---|---|---|
+| `GET` / `POST` | `/api/auth/admin/roles` | List or create roles. |
+| `GET` / `PATCH` / `DELETE` | `/api/auth/admin/roles/{id}` | Read/update/delete role. |
+| `GET` / `POST` | `/api/auth/admin/access-permissions` | List or create `(resource, action)` permissions. |
+| `GET` / `PATCH` / `DELETE` | `/api/auth/admin/access-permissions/{id}` | Read/update/delete permission. |
+| `POST` | `/api/auth/admin/roles/{role_id}/permissions` | Grant permission to role. |
+| `DELETE` | `/api/auth/admin/roles/{role_id}/permissions/{permission_id}` | Revoke permission from role. |
+| `POST` | `/api/auth/admin/users/{user_id}/roles` | Grant role to user. |
+| `DELETE` | `/api/auth/admin/users/{user_id}/roles/{role_id}` | Revoke role from user. |
+| `GET` / `POST` | `/api/auth/admin/policy-rules` | List or create policy rules. |
+| `GET` / `PATCH` / `DELETE` | `/api/auth/admin/policy-rules/{id}` | Read/update/delete policy rule. |
+
+### Operational routes
+
+| Method | Route | Description |
+|---|---|---|
+| `GET` | `/health/live` | Liveness probe (process is up). |
+| `GET` | `/health/ready` | Readiness probe (DB connectivity check). |
+| `GET` | `/admin/` | Django admin UI. |
+
+## Database Entities
+
+Primary entities from `accounts/models.py`:
+
+| Entity | Purpose | Key fields / constraints |
+|---|---|---|
+| `User` | Custom auth user (`AUTH_USER_MODEL`) | `email` unique; email-based login; soft delete via `is_active`. |
+| `Role` | Named security role | `name` unique. |
+| `AccessPermission` | Grantable capability | Unique `(resource, action)`. |
+| `RolePermission` | RBAC matrix row | Unique `(role, access_permission)`. |
+| `UserRole` | User-role binding | Unique `(user, role)`. |
+| `AuthPolicyRule` | Explicit allow/deny override | Unique `(resource, action, subject_type, subject_value)`. |
+
+### Entity relationships
+
+- `User` many-to-many `Role` via `UserRole`.
+- `Role` many-to-many `AccessPermission` via `RolePermission`.
+- `AuthPolicyRule` matches by:
+  - `subject_type=any` (all authenticated users),
+  - `subject_type=user` + email in `subject_value`,
+  - `subject_type=role` + role name in `subject_value`.
+
+### Authorization precedence
+
+1. Explicit deny rule (`AuthPolicyRule.is_allowed = false`)
+2. Explicit allow rule (`AuthPolicyRule.is_allowed = true`)
+3. RBAC matrix grant (`UserRole` + `RolePermission` + `AccessPermission`)
+4. Deny by default
+
+## Demo Seed Accounts
+
+After `python manage.py migrate`, demo users are seeded (for local/recruitment demos only):
+
+| Email | Password | Typical behavior |
+|---|---|---|
+| `demo.member@example.com` | `DemoShowcase2026!` | Authenticated, member-level matrix grants. |
+| `demo.staff@example.com` | `DemoShowcase2026!` | Staff user, can access admin management APIs when policy allows. |
+| `demo.plain@example.com` | `DemoShowcase2026!` | Authenticated with minimal/default access. |
+
+Do not use these credentials in production.
+
+## Validation and Quality Commands
+
+Set environment first:
+
+PowerShell:
+
+```powershell
+$env:DJANGO_SECRET_KEY="local-dev-not-secret"
+$env:DEBUG="true"
+```
+
+Bash:
 
 ```bash
-pip install -r requirements-dev.txt
-set DJANGO_SECRET_KEY=local-dev-not-secret
-set DEBUG=true
+export DJANGO_SECRET_KEY=local-dev-not-secret
+export DEBUG=true
+```
+
+Then run:
+
+```bash
+ruff check .
+mypy -p config
 pytest
+python manage.py check
 ```
 
-(`python manage.py test accounts` still works if you prefer Django’s runner.)
+## Manual API Checks
 
-### Optional smoke test (against runserver)
+For CSRF/session flow and `401`/`403` probes:
 
-Start the server first:
+- `docs/manual-api-checks.md`
+- `python scripts/smoke_auth.py`
+- `python scripts/probe_auth_semantics.py http://127.0.0.1:8000`
 
-```bash
-python manage.py runserver
-```
+## Project Documentation
 
-Then in a second terminal run:
+- `ARCHITECTURE.md` - system design and policy model
+- `docs/SECURITY.md` - security model and controls
+- `docs/RELIABILITY.md` - reliability and error handling
+- `docs/CONVENTIONS.md` - coding standards
+- `docs/QUALITY_SCORE.md` - current quality metrics
 
-```bash
-python scripts/smoke_auth.py
-```
-
-If your server is on another port/host:
-
-```bash
-python scripts/smoke_auth.py http://127.0.0.1:8001
-```
