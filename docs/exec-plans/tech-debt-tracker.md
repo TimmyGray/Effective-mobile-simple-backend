@@ -54,7 +54,7 @@ Machine-readable task backlog. Single source of truth for all work items.
 | B-M1 | Add automated tests for auth and authorization decision matrix | backend | 1d | todo | Cover happy paths and denial edge cases |
 | B-M2 | Add `.env.example`, config loading, and startup validation of critical env vars | backend | 0.25d | todo | Prevent runtime surprises and secrets leakage |
 | B-M3 | Introduce baseline lint/test commands and CI workflow for validation | infra | 0.5d | todo | Needed for reliable `/validate` and PR checks |
-| B-M4 | Add selective AI Annotation docstrings to non-trivial backend functions (auth, policy, validation, API handlers), excluding small/obvious helpers | backend | 0.5d | todo | Improve explicit behavior/failure-mode clarity and recruiter readability without changing runtime behavior |
+| B-M4 | Add selective AI Annotation docstrings to non-trivial backend functions (auth, policy, validation, API handlers), excluding small/obvious helpers | backend | 0.5d | done | Merged PR #2; docstrings only, no runtime change |
 
 ## Low Priority
 
