@@ -35,6 +35,7 @@ Implement a custom authentication flow (register/login/logout/session identity) 
 - Added API tests first for expected `401` behavior and credential validation outcomes.
 - Switched to fail-fast secret key configuration and deny-by-default DRF permission defaults after security review.
 - Added centralized policy permission checks on protected auth endpoints plus a forbidden-path probe to verify `403` semantics.
+- Migrated auth policy allow-list to database-backed rules to keep authorization as durable data with deny-by-default fallback.
 
 ## Risks / Open Questions
 

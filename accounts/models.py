@@ -46,3 +46,14 @@ class User(AbstractUser):
     REQUIRED_FIELDS: list[str] = []
 
     objects = UserManager()
+
+
+class AuthPolicyRule(models.Model):
+    resource = models.CharField(max_length=100)
+    action = models.CharField(max_length=100)
+    is_allowed = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["resource", "action"], name="uniq_auth_policy_rule"),
+        ]
