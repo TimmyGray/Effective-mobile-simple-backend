@@ -46,3 +46,4 @@ Baseline captured during `/setup-workflow` on 2026-04-09.
 - 2026-04-09: Initial baseline established. Validation commands and dependency audits are not yet configured because application manifests are not present in repository root.
 - 2026-04-09 (Phase 12 sweep): Cadence threshold met for sweep; removed unused `get_user_model` import in `accounts/admin_serializers.py`; `manage.py test accounts` — 31 passed. Audit and retrospective not due (counters 3/5 and 3/10).
 - 2026-04-09 (`/develop-feature` Phase 12 audit): `manage.py test accounts` — 40 passed; CLAUDE.md quick-reference paths verified; lint/types still not configured (B-M3).
+- 2026-04-09 (post-merge sweep, PR #8 on `main`): `manage.py test accounts` — 40 passed; `accounts/tests.py` ~691 lines (split into submodules deferred); no mechanical fixes applied.
