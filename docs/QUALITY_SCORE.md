@@ -8,9 +8,9 @@ Baseline captured during `/setup-workflow` on 2026-04-09.
 
 | Suite | Files | Tests | Pass Rate |
 |-------|-------|-------|-----------|
-| Backend (`pytest`, `accounts/`) | 1 | 40 | 100% |
+| Backend (`pytest`, `accounts/`, `config/tests`) | 2 | 58 | 100% |
 | Frontend | N/A | N/A | N/A |
-| **Total** | 1 | 40 | 100% |
+| **Total** | 2 | 58 | 100% |
 
 ## Lint / Type / Build
 
@@ -36,8 +36,8 @@ Baseline captured during `/setup-workflow` on 2026-04-09.
 |----------|------|------|
 | Critical | 0 | 3 |
 | High | 0 | 3 |
-| Medium | 1 | 3 |
-| Low | 2 | 0 |
+| Medium | 0 | 4 |
+| Low | 1 | 1 |
 | Features | 2 | 1 |
 
 ## Sweep History
@@ -48,3 +48,4 @@ Baseline captured during `/setup-workflow` on 2026-04-09.
 - 2026-04-09 (`/develop-feature` Phase 12 audit): `manage.py test accounts` — 40 passed; CLAUDE.md quick-reference paths verified; lint/types still not configured (B-M3).
 - 2026-04-09 (post-merge sweep, PR #8 on `main`): `manage.py test accounts` — 40 passed; `accounts/tests.py` ~691 lines (split into submodules deferred); no mechanical fixes applied.
 - 2026-04-09 (B-M3): `requirements-dev.txt` + `pyproject.toml` + GitHub Actions; `ruff check .`, `mypy -p config`, `pytest`, `manage.py check` — all clean with `DJANGO_SECRET_KEY` + `DEBUG=true`.
+- 2026-04-09 (post-merge sweep, B-L1 / PR #11 on `main`): `pytest` — 58 passed; `accounts/tests.py` ~886 lines (split deferred per sweep rules); maintenance cadence sweep counter reset; no code changes.

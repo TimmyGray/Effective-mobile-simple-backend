@@ -60,7 +60,7 @@ Machine-readable task backlog. Single source of truth for all work items.
 
 | ID | Task | Area | Effort | Status | Notes |
 |----|------|------|--------|--------|-------|
-| B-L1 | Add structured audit logging for auth and policy management actions | backend | 0.5d | todo | Start with essential events and request correlation ID |
+| B-L1 | Add structured audit logging for auth and policy management actions | backend | 0.5d | done | Merged PR #11; `accounts.audit` + `CorrelationIdMiddleware` + JSON formatter |
 | B-L2 | Add health endpoints (`/health/live`, `/health/ready`) for ops readiness | backend | 0.25d | todo | Useful once service is deployable |
 
 ## Features
