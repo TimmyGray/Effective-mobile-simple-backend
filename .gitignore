@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+.DS_Store
+docs/exec-plans/active-work.json
+.claude/worktrees/
+
+# BMAD Agent framework and logs
+_bmad/
+_bmad-output/

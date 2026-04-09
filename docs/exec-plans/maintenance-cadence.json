@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "counters": {
+    "features_since_last_sweep": 0,
+    "features_since_last_audit": 0,
+    "features_since_last_retrospective": 0
+  },
+  "thresholds": {
+    "sweep_every_n_features": 3,
+    "audit_every_n_features": 5,
+    "retrospective_every_n_features": 10
+  },
+  "pending_runs": [],
+  "last_runs": {
+    "sweep": "never",
+    "audit": "never",
+    "retrospective": "never"
+  },
+  "last_updated": "not-initialized"
+}
