@@ -62,6 +62,8 @@ Machine-readable task backlog. Single source of truth for all work items.
 |----|------|------|--------|--------|-------|
 | B-L1 | Add structured audit logging for auth and policy management actions | backend | 0.5d | done | Merged PR #11; `accounts.audit` + `CorrelationIdMiddleware` + JSON formatter |
 | B-L2 | Add health endpoints (`/health/live`, `/health/ready`) for ops readiness | backend | 0.25d | done | Merged PR #12; `config.health` + `config/tests/test_health.py` |
+| B-L3 | Split `accounts/tests.py` into `accounts/tests/` package (per-class modules or domain groupings) | backend | 0.5d | done | `accounts/tests/` + `test_*.py` modules + `constants.py`; removed monolithic `tests.py` |
+| B-L4 | Upgrade pip in dev/CI to ≥26.0.1 (CVE-2026-1703); optionally add `pip-audit` to `/validate` or CI advisory step | infra | 0.1d | done | CI: `pip>=26.0.1`, `pip-audit` step; `pip-audit==2.10.0` in `requirements-dev.txt` |
 
 ## Features
 
