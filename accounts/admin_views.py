@@ -15,6 +15,7 @@ from accounts.admin_serializers import (
     GrantRoleToUserSerializer,
     RoleSerializer,
 )
+from accounts.audit import emit_audit_event
 from accounts.models import AccessPermission, AuthPolicyRule, Role, RolePermission, UserRole
 from accounts.permissions import EnforcedAuthzPermission, IsStaffUser
 
@@ -52,6 +53,12 @@ class AdminRoleListCreateView(AdminAPIMixin, APIView):
         serializer = RoleSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         role = serializer.save()
+        emit_audit_event(
+            request,
+            "admin.role_create",
+            role_id=role.id,
+            role_name=role.name,
+        )
         return Response(RoleSerializer(role).data, status=status.HTTP_201_CREATED)
 
 
@@ -65,6 +72,7 @@ class AdminRoleDetailView(AdminAPIMixin, APIView):
         serializer = RoleSerializer(role, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        emit_audit_event(request, "admin.role_update", role_id=role.id)
         return Response(RoleSerializer(role).data, status=status.HTTP_200_OK)
 
     def delete(self, request: Request, pk: int) -> Response:
@@ -82,6 +90,7 @@ class AdminRoleDetailView(AdminAPIMixin, APIView):
                 {"detail": "Cannot delete role while AuthPolicyRule rows reference this role name."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        emit_audit_event(request, "admin.role_delete", role_id=role.id, role_name=role.name)
         role.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -95,6 +104,13 @@ class AdminAccessPermissionListCreateView(AdminAPIMixin, APIView):
         serializer = AccessPermissionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         perm = serializer.save()
+        emit_audit_event(
+            request,
+            "admin.access_permission_create",
+            access_permission_id=perm.id,
+            resource=perm.resource,
+            action=perm.action,
+        )
         return Response(AccessPermissionSerializer(perm).data, status=status.HTTP_201_CREATED)
 
 
@@ -108,10 +124,12 @@ class AdminAccessPermissionDetailView(AdminAPIMixin, APIView):
         serializer = AccessPermissionSerializer(perm, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        emit_audit_event(request, "admin.access_permission_update", access_permission_id=perm.id)
         return Response(AccessPermissionSerializer(perm).data, status=status.HTTP_200_OK)
 
     def delete(self, request: Request, pk: int) -> Response:
         perm = get_object_or_404(AccessPermission, pk=pk)
+        emit_audit_event(request, "admin.access_permission_delete", access_permission_id=perm.id)
         perm.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -133,6 +151,13 @@ class AdminRolePermissionGrantView(AdminAPIMixin, APIView):
             access_permission=access_permission,
         )
         status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        emit_audit_event(
+            request,
+            "admin.role_permission_grant",
+            role_id=role.id,
+            access_permission_id=access_permission.id,
+            created=created,
+        )
         return Response(
             {
                 "role_id": role.id,
@@ -151,6 +176,12 @@ class AdminRolePermissionGrantView(AdminAPIMixin, APIView):
         ).delete()
         if not deleted:
             return Response(status=status.HTTP_404_NOT_FOUND)
+        emit_audit_event(
+            request,
+            "admin.role_permission_revoke",
+            role_id=role.id,
+            access_permission_id=access_permission.id,
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -168,6 +199,13 @@ class AdminUserRoleGrantView(AdminAPIMixin, APIView):
         with transaction.atomic():
             _, created = UserRole.objects.get_or_create(user=target, role=role)
         status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        emit_audit_event(
+            request,
+            "admin.user_role_grant",
+            target_user_id=target.id,
+            role_id=role.id,
+            created=created,
+        )
         return Response(
             {"user_id": target.id, "role_id": role.id, "created": created},
             status=status_code,
@@ -179,6 +217,12 @@ class AdminUserRoleGrantView(AdminAPIMixin, APIView):
         deleted, _ = UserRole.objects.filter(user=target, role=role).delete()
         if not deleted:
             return Response(status=status.HTTP_404_NOT_FOUND)
+        emit_audit_event(
+            request,
+            "admin.user_role_revoke",
+            target_user_id=target.id,
+            role_id=role.id,
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -191,6 +235,7 @@ class AdminPolicyRuleListCreateView(AdminAPIMixin, APIView):
         serializer = AuthPolicyRuleSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         rule = serializer.save()
+        emit_audit_event(request, "admin.policy_rule_create", policy_rule_id=rule.id)
         return Response(AuthPolicyRuleSerializer(rule).data, status=status.HTTP_201_CREATED)
 
 
@@ -204,9 +249,11 @@ class AdminPolicyRuleDetailView(AdminAPIMixin, APIView):
         serializer = AuthPolicyRuleSerializer(rule, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        emit_audit_event(request, "admin.policy_rule_update", policy_rule_id=rule.id)
         return Response(AuthPolicyRuleSerializer(rule).data, status=status.HTTP_200_OK)
 
     def delete(self, request: Request, pk: int) -> Response:
         rule = get_object_or_404(AuthPolicyRule, pk=pk)
+        emit_audit_event(request, "admin.policy_rule_delete", policy_rule_id=rule.id)
         rule.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

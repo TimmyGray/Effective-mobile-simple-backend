@@ -1,11 +1,13 @@
 from django.contrib.auth import login, logout
 from django.middleware.csrf import get_token
 from rest_framework import status
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.audit import emit_audit_event
 from accounts.permissions import EnforcedAuthzPermission
 from accounts.serializers import (
     LoginSerializer,
@@ -32,6 +34,7 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        emit_audit_event(request, "auth.register_success", user_id=user.pk)
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
@@ -50,9 +53,14 @@ class LoginView(APIView):
         - Security notes: Session state is established only after credential validation passes.
         """
         serializer = LoginSerializer(data=request.data, context={"request": request})
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except AuthenticationFailed:
+            emit_audit_event(request, "auth.login_failure", reason="invalid_credentials")
+            raise
         user = serializer.validated_data["user"]
         login(request, user)
+        emit_audit_event(request, "auth.login_success", user_id=user.pk)
         return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
 
 
@@ -69,6 +77,7 @@ class LogoutView(APIView):
         - Outputs: Returns HTTP 204 with empty body on successful logout.
         - Side effects: Invalidates session authentication artifacts for the current request.
         """
+        emit_audit_event(request, "auth.logout")
         logout(request)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -120,6 +129,7 @@ class MeView(APIView):
         )
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        emit_audit_event(request, "auth.profile_update", user_id=user.pk)
         return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
 
     def delete(self, request: Request) -> Response:
@@ -132,6 +142,7 @@ class MeView(APIView):
         - Security notes: Requires `auth:account_deactivate`; user cannot authenticate afterward.
         """
         user = request.user
+        emit_audit_event(request, "auth.account_deactivate", user_id=user.pk)
         user.is_active = False
         user.save(update_fields=["is_active"])
         logout(request)

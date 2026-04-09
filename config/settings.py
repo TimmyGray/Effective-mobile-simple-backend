@@ -28,6 +28,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "accounts.middleware.CorrelationIdMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -109,5 +110,28 @@ REST_FRAMEWORK = {
         "user": os.getenv("DRF_THROTTLE_USER", "120/min"),
         "auth_login": os.getenv("DRF_THROTTLE_AUTH_LOGIN", "10/min"),
         "auth_register": os.getenv("DRF_THROTTLE_AUTH_REGISTER", "5/min"),
+    },
+}
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "audit_json": {
+            "()": "accounts.logging_formatters.AuditJsonFormatter",
+        },
+    },
+    "handlers": {
+        "audit_console": {
+            "class": "logging.StreamHandler",
+            "formatter": "audit_json",
+        },
+    },
+    "loggers": {
+        "accounts.audit": {
+            "handlers": ["audit_console"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
