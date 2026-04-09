@@ -189,3 +189,28 @@ This workflow is built on these beliefs:
 ## License
 
 MIT
+
+## Backend auth API (B-C1)
+
+This repository now includes a minimal Django + DRF backend implementing:
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+
+### Local run
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
+
+### Run tests
+
+```bash
+python manage.py test
+```

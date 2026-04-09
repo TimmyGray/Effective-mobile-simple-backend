@@ -14,3 +14,9 @@ _bmad-output/
 .claude/
 
 .cursor/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+db.sqlite3
