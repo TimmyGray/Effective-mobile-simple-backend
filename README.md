@@ -215,3 +215,23 @@ python manage.py runserver
 ```bash
 python manage.py test
 ```
+
+### Optional smoke test (against runserver)
+
+Start the server first:
+
+```bash
+python manage.py runserver
+```
+
+Then in a second terminal run:
+
+```bash
+python scripts/smoke_auth.py
+```
+
+If your server is on another port/host:
+
+```bash
+python scripts/smoke_auth.py http://127.0.0.1:8001
+```

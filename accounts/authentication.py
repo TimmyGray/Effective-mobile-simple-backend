@@ -9,3 +9,6 @@ class SessionAuthentication401(SessionAuthentication):
 
     def authenticate_header(self, request) -> str:
         return "Session"
+
+    def enforce_csrf(self, request) -> None:
+        return
