@@ -185,6 +185,32 @@ class PolicyDecideTests(TestCase):
         self.assertEqual(is_allowed(user, "x", "y"), decision.allowed)
         self.assertIsInstance(decision, PolicyDecision)
 
+    def test_superuser_subject_role_rule_matches_via_user_roles(self) -> None:
+        user = User.objects.create_user(email="su@example.com", password="StrongPass123!")
+        user.is_superuser = True
+        user.is_staff = True
+        user.save(update_fields=["is_superuser", "is_staff"])
+        AuthPolicyRule.objects.create(
+            resource="vault",
+            action="open",
+            subject_type=AuthPolicyRule.SUBJECT_ROLE,
+            subject_value="superuser",
+            is_allowed=True,
+        )
+        decision = decide(user, "vault", "open")
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.reason, "explicit_allow")
+
+    def test_matrix_default_deny_when_action_not_granted_to_role(self) -> None:
+        user = User.objects.create_user(email="partial@example.com", password="StrongPass123!")
+        role = Role.objects.create(name="shipper")
+        ap = AccessPermission.objects.create(resource="parcels", action="track")
+        RolePermission.objects.create(role=role, access_permission=ap)
+        UserRole.objects.create(user=user, role=role)
+        decision = decide(user, "parcels", "reroute")
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reason, "default_deny")
+
 
 @override_settings(REST_FRAMEWORK=_REST_FRAMEWORK_NO_THROTTLE)
 class AuthFlowTests(APITestCase):
@@ -612,6 +638,101 @@ class AdminApiTests(APITestCase):
             HTTP_X_CSRFTOKEN=csrf,
         )
         self.assertEqual(policy_ok.status_code, status.HTTP_201_CREATED)
+
+
+@override_settings(REST_FRAMEWORK=_REST_FRAMEWORK_NO_THROTTLE)
+class AuthzDecisionMatrixApiTests(APITestCase):
+    """
+    B-M1: HTTP-level matrix for auth policy actions — explicit deny vs seeded allows.
+
+    AI Annotation:
+    - Purpose: Lock 401/403 behavior and `decide()` reason codes for `auth:*` view wiring.
+    - Inputs: Seeded migrations plus per-test `AuthPolicyRule` rows; session + CSRF like other API tests.
+    - Security notes: Asserts explicit per-user denies override global allows; no credential secrets in tests.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls._register_throttle_classes = RegisterView.throttle_classes
+        cls._login_throttle_classes = LoginView.throttle_classes
+        RegisterView.throttle_classes = []
+        LoginView.throttle_classes = []
+
+    @classmethod
+    def tearDownClass(cls):
+        RegisterView.throttle_classes = cls._register_throttle_classes
+        LoginView.throttle_classes = cls._login_throttle_classes
+        super().tearDownClass()
+
+    def _csrf(self) -> str:
+        r = self.client.get("/api/auth/csrf")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        return str(r.data["csrfToken"])
+
+    def test_patch_me_403_when_explicit_user_deny_on_profile_update(self) -> None:
+        csrf = self._csrf()
+        self.client.post(
+            "/api/auth/register",
+            {"email": "nopatch@example.com", "password": "StrongPass123!"},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        AuthPolicyRule.objects.create(
+            resource="auth",
+            action="profile_update",
+            subject_type=AuthPolicyRule.SUBJECT_USER,
+            subject_value="nopatch@example.com",
+            is_allowed=False,
+        )
+        self.client.post(
+            "/api/auth/login",
+            {"email": "nopatch@example.com", "password": "StrongPass123!"},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        response = self.client.patch(
+            "/api/auth/me",
+            {"email": "still@example.com"},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_logout_403_when_explicit_user_deny_on_logout(self) -> None:
+        csrf = self._csrf()
+        self.client.post(
+            "/api/auth/register",
+            {"email": "nologout@example.com", "password": "StrongPass123!"},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        AuthPolicyRule.objects.create(
+            resource="auth",
+            action="logout",
+            subject_type=AuthPolicyRule.SUBJECT_USER,
+            subject_value="nologout@example.com",
+            is_allowed=False,
+        )
+        self.client.post(
+            "/api/auth/login",
+            {"email": "nologout@example.com", "password": "StrongPass123!"},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        response = self.client.post("/api/auth/logout", HTTP_X_CSRFTOKEN=csrf)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_decide_matrix_reason_codes_for_auth_resource(self) -> None:
+        """
+        Documents stable `decide()` reasons for the `auth` resource actions used by API views.
+        """
+        u = User.objects.create_user(email="doc@example.com", password="StrongPass123!")
+        self.assertEqual(decide(u, "auth", "me").reason, "explicit_allow")
+        self.assertEqual(decide(u, "auth", "logout").reason, "explicit_allow")
+        self.assertEqual(decide(u, "auth", "profile_update").reason, "explicit_allow")
+        self.assertEqual(decide(u, "auth", "account_deactivate").reason, "explicit_allow")
+        self.assertEqual(decide(u, "auth", "admin_probe").reason, "default_deny")
 
 
 class DemoShowcaseSeedTests(TestCase):

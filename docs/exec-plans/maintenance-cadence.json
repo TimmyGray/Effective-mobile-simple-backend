@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "counters": {
-    "features_since_last_sweep": 1,
-    "features_since_last_audit": 4,
-    "features_since_last_retrospective": 4
+    "features_since_last_sweep": 2,
+    "features_since_last_audit": 0,
+    "features_since_last_retrospective": 5
   },
   "thresholds": {
     "sweep_every_n_features": 3,
@@ -13,7 +13,7 @@
   "pending_runs": [],
   "last_runs": {
     "sweep": "2026-04-09",
-    "audit": "never",
+    "audit": "2026-04-09",
     "retrospective": "never"
   },
   "last_updated": "2026-04-09"
