@@ -91,7 +91,7 @@ REST_FRAMEWORK = {
         "accounts.authentication.SessionAuthentication401",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticated",
+        "accounts.permissions.EnforcedAuthzPermission",
     ],
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",

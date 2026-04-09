@@ -8,11 +8,20 @@ User = get_user_model()
 
 
 class AuthFlowTests(APITestCase):
+    def _get_csrf_token(self) -> str:
+        response = self.client.get("/api/auth/csrf")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        token = response.data.get("csrfToken")
+        self.assertIsNotNone(token)
+        return str(token)
+
     def test_register_login_me_logout_happy_path(self) -> None:
+        csrf_token = self._get_csrf_token()
         register_response = self.client.post(
             "/api/auth/register",
             {"email": "user@example.com", "password": "StrongPass123!"},
             format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
         )
         self.assertEqual(register_response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(register_response.data["email"], "user@example.com")
@@ -24,6 +33,7 @@ class AuthFlowTests(APITestCase):
             "/api/auth/login",
             {"email": "user@example.com", "password": "StrongPass123!"},
             format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
         )
         self.assertEqual(login_response.status_code, status.HTTP_200_OK)
 
@@ -31,7 +41,7 @@ class AuthFlowTests(APITestCase):
         self.assertEqual(me_response.status_code, status.HTTP_200_OK)
         self.assertEqual(me_response.data["email"], "user@example.com")
 
-        logout_response = self.client.post("/api/auth/logout")
+        logout_response = self.client.post("/api/auth/logout", HTTP_X_CSRFTOKEN=csrf_token)
         self.assertEqual(logout_response.status_code, status.HTTP_204_NO_CONTENT)
 
         me_after_logout = self.client.get("/api/auth/me")
@@ -39,11 +49,13 @@ class AuthFlowTests(APITestCase):
 
     def test_login_with_invalid_credentials(self) -> None:
         User.objects.create_user(email="user@example.com", password="StrongPass123!")
+        csrf_token = self._get_csrf_token()
 
         response = self.client.post(
             "/api/auth/login",
             {"email": "user@example.com", "password": "WrongPassword123!"},
             format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertIn("detail", response.data)
@@ -53,15 +65,18 @@ class AuthFlowTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_logout_unauthenticated_returns_401(self) -> None:
-        response = self.client.post("/api/auth/logout")
+        csrf_token = self._get_csrf_token()
+        response = self.client.post("/api/auth/logout", HTTP_X_CSRFTOKEN=csrf_token)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_authenticated_forbidden_path_returns_403(self) -> None:
         User.objects.create_user(email="user@example.com", password="StrongPass123!")
+        csrf_token = self._get_csrf_token()
         self.client.post(
             "/api/auth/login",
             {"email": "user@example.com", "password": "StrongPass123!"},
             format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
         )
         response = self.client.get("/api/auth/admin-probe")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -70,11 +85,13 @@ class AuthFlowTests(APITestCase):
         user = User.objects.create_user(email="user@example.com", password="StrongPass123!")
         user.is_active = False
         user.save(update_fields=["is_active"])
+        csrf_token = self._get_csrf_token()
 
         response = self.client.post(
             "/api/auth/login",
             {"email": "user@example.com", "password": "StrongPass123!"},
             format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(str(response.data.get("detail")), "Invalid credentials.")
@@ -85,27 +102,31 @@ class AuthFlowTests(APITestCase):
                 "rest_framework.authentication.SessionAuthentication",
             ],
             "DEFAULT_PERMISSION_CLASSES": [
-                "rest_framework.permissions.IsAuthenticated",
+                "accounts.permissions.EnforcedAuthzPermission",
             ],
             "DEFAULT_THROTTLE_CLASSES": [
-                "rest_framework.throttling.AnonRateThrottle",
-                "rest_framework.throttling.UserRateThrottle",
+                "rest_framework.throttling.ScopedRateThrottle",
             ],
             "DEFAULT_THROTTLE_RATES": {
-                "anon": "3/min",
-                "user": "100/min",
                 "auth_login": "3/min",
                 "auth_register": "5/min",
             },
         }
     )
+    def test_login_scope_uses_auth_login_rate_configuration(self) -> None:
+        from accounts.views import LoginView
+
+        self.assertEqual(LoginView.throttle_scope, "auth_login")
+
     def test_login_repeated_invalid_attempts_stay_unauthorized(self) -> None:
         User.objects.create_user(email="user@example.com", password="StrongPass123!")
+        csrf_token = self._get_csrf_token()
         for _ in range(3):
             response = self.client.post(
                 "/api/auth/login",
                 {"email": "user@example.com", "password": "WrongPassword123!"},
                 format="json",
+                HTTP_X_CSRFTOKEN=csrf_token,
             )
             self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -113,5 +134,6 @@ class AuthFlowTests(APITestCase):
             "/api/auth/login",
             {"email": "user@example.com", "password": "WrongPassword123!"},
             format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
         )
         self.assertEqual(final_response.status_code, status.HTTP_401_UNAUTHORIZED)
