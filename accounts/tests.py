@@ -1,10 +1,80 @@
 from django.contrib.auth import get_user_model
-from django.test import override_settings
+from django.contrib.auth.models import AnonymousUser
+from django.test import TestCase, override_settings
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from accounts.models import AuthPolicyRule
+from accounts.policy import PolicyDecision, decide, is_allowed
+
 
 User = get_user_model()
+
+
+class PolicyDecisionServiceTests(TestCase):
+    def test_anonymous_user_is_denied_without_db_lookup(self) -> None:
+        decision = decide(AnonymousUser(), "auth", "me")
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reason, "unauthenticated_or_inactive")
+
+    def test_inactive_user_is_denied(self) -> None:
+        user = User.objects.create_user(email="inactive@example.com", password="StrongPass123!")
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+        decision = decide(user, "auth", "me")
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reason, "unauthenticated_or_inactive")
+
+    def test_default_deny_when_no_matching_rules(self) -> None:
+        user = User.objects.create_user(email="solo@example.com", password="StrongPass123!")
+        decision = decide(user, "unknown", "action")
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reason, "default_deny")
+
+    def test_explicit_allow_any_rule_grants_access(self) -> None:
+        user = User.objects.create_user(email="member@example.com", password="StrongPass123!")
+        AuthPolicyRule.objects.create(
+            resource="widgets",
+            action="read",
+            subject_type=AuthPolicyRule.SUBJECT_ANY,
+            subject_value="",
+            is_allowed=True,
+        )
+        decision = decide(user, "widgets", "read")
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.reason, "explicit_allow")
+
+    def test_explicit_user_deny_overrides_global_allow(self) -> None:
+        user = User.objects.create_user(email="blocked@example.com", password="StrongPass123!")
+        AuthPolicyRule.objects.create(
+            resource="demo",
+            action="ping",
+            subject_type=AuthPolicyRule.SUBJECT_ANY,
+            subject_value="",
+            is_allowed=True,
+        )
+        AuthPolicyRule.objects.create(
+            resource="demo",
+            action="ping",
+            subject_type=AuthPolicyRule.SUBJECT_USER,
+            subject_value="blocked@example.com",
+            is_allowed=False,
+        )
+        decision = decide(user, "demo", "ping")
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reason, "explicit_deny")
+
+    def test_is_allowed_matches_decide(self) -> None:
+        user = User.objects.create_user(email="match@example.com", password="StrongPass123!")
+        AuthPolicyRule.objects.create(
+            resource="x",
+            action="y",
+            subject_type=AuthPolicyRule.SUBJECT_ANY,
+            subject_value="",
+            is_allowed=True,
+        )
+        self.assertEqual(is_allowed(user, "x", "y"), decide(user, "x", "y").allowed)
+        self.assertIsInstance(decide(user, "x", "y"), PolicyDecision)
 
 
 class AuthFlowTests(APITestCase):
