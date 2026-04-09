@@ -2,12 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from django.contrib.auth import get_user_model
+from django.contrib.auth.base_user import AbstractBaseUser
 
 from accounts.models import AuthPolicyRule
-
-
-User = get_user_model()
 
 
 @dataclass(frozen=True)
@@ -24,7 +21,7 @@ class PolicyDecision:
     reason: str
 
 
-def _user_roles(user: User) -> list[str]:
+def _user_roles(user: AbstractBaseUser) -> list[str]:
     """
     AI Annotation:
     - Purpose: Map Django user privilege flags to policy role keys used in `AuthPolicyRule`.
@@ -40,7 +37,7 @@ def _user_roles(user: User) -> list[str]:
     return roles
 
 
-def _rule_applies(rule: AuthPolicyRule, user: User) -> bool:
+def _rule_applies(rule: AuthPolicyRule, user: AbstractBaseUser) -> bool:
     """
     AI Annotation:
     - Purpose: Determine whether a single policy row applies to the given user.
@@ -52,13 +49,14 @@ def _rule_applies(rule: AuthPolicyRule, user: User) -> bool:
     if rule.subject_type == AuthPolicyRule.SUBJECT_ANY:
         return True
     if rule.subject_type == AuthPolicyRule.SUBJECT_USER:
-        return bool(user.email) and user.email == rule.subject_value
+        email = getattr(user, "email", "") or ""
+        return bool(email) and email == rule.subject_value
     if rule.subject_type == AuthPolicyRule.SUBJECT_ROLE:
         return rule.subject_value in _user_roles(user)
     return False
 
 
-def decide(user: User, resource: str, action: str) -> PolicyDecision:
+def decide(user: AbstractBaseUser, resource: str, action: str) -> PolicyDecision:
     """
     AI Annotation:
     - Purpose: Central policy decision point for `(user, resource, action)` checks.
@@ -74,7 +72,7 @@ def decide(user: User, resource: str, action: str) -> PolicyDecision:
     if not resource or not action:
         return PolicyDecision(False, "invalid_resource_action")
 
-    rules = list(AuthPolicyRule.objects.filter(resource=resource, action=action))
+    rules = list(AuthPolicyRule.objects.filter(resource=resource, action=action).order_by("pk"))
     denies = [r for r in rules if not r.is_allowed]
     allows = [r for r in rules if r.is_allowed]
 
@@ -89,7 +87,7 @@ def decide(user: User, resource: str, action: str) -> PolicyDecision:
     return PolicyDecision(False, "default_deny")
 
 
-def is_allowed(user: User, resource: str, action: str) -> bool:
+def is_allowed(user: AbstractBaseUser, resource: str, action: str) -> bool:
     """
     AI Annotation:
     - Purpose: Boolean facade for permissions classes and legacy call sites.

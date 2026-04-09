@@ -11,11 +11,16 @@ from accounts.policy import PolicyDecision, decide, is_allowed
 User = get_user_model()
 
 
-class PolicyDecisionServiceTests(TestCase):
+class PolicyDecideTests(TestCase):
     def test_anonymous_user_is_denied_without_db_lookup(self) -> None:
         decision = decide(AnonymousUser(), "auth", "me")
         self.assertFalse(decision.allowed)
         self.assertEqual(decision.reason, "unauthenticated_or_inactive")
+
+    def test_invalid_resource_or_action_returns_reason(self) -> None:
+        user = User.objects.create_user(email="a@example.com", password="StrongPass123!")
+        self.assertEqual(decide(user, "", "me").reason, "invalid_resource_action")
+        self.assertEqual(decide(user, "auth", "").reason, "invalid_resource_action")
 
     def test_inactive_user_is_denied(self) -> None:
         user = User.objects.create_user(email="inactive@example.com", password="StrongPass123!")
@@ -64,6 +69,54 @@ class PolicyDecisionServiceTests(TestCase):
         self.assertFalse(decision.allowed)
         self.assertEqual(decision.reason, "explicit_deny")
 
+    def test_subject_any_deny_blocks_all_authenticated_users(self) -> None:
+        user = User.objects.create_user(email="user@example.com", password="StrongPass123!")
+        AuthPolicyRule.objects.create(
+            resource="gate",
+            action="enter",
+            subject_type=AuthPolicyRule.SUBJECT_ANY,
+            subject_value="",
+            is_allowed=False,
+        )
+        decision = decide(user, "gate", "enter")
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reason, "explicit_deny")
+
+    def test_non_matching_user_rule_falls_through_to_any_allow(self) -> None:
+        user = User.objects.create_user(email="current@example.com", password="StrongPass123!")
+        AuthPolicyRule.objects.create(
+            resource="mix",
+            action="read",
+            subject_type=AuthPolicyRule.SUBJECT_ANY,
+            subject_value="",
+            is_allowed=True,
+        )
+        AuthPolicyRule.objects.create(
+            resource="mix",
+            action="read",
+            subject_type=AuthPolicyRule.SUBJECT_USER,
+            subject_value="other@example.com",
+            is_allowed=False,
+        )
+        decision = decide(user, "mix", "read")
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.reason, "explicit_allow")
+
+    def test_role_allow_matches_staff(self) -> None:
+        user = User.objects.create_user(email="staff@example.com", password="StrongPass123!")
+        user.is_staff = True
+        user.save(update_fields=["is_staff"])
+        AuthPolicyRule.objects.create(
+            resource="admin",
+            action="peek",
+            subject_type=AuthPolicyRule.SUBJECT_ROLE,
+            subject_value="staff",
+            is_allowed=True,
+        )
+        decision = decide(user, "admin", "peek")
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.reason, "explicit_allow")
+
     def test_is_allowed_matches_decide(self) -> None:
         user = User.objects.create_user(email="match@example.com", password="StrongPass123!")
         AuthPolicyRule.objects.create(
@@ -73,8 +126,9 @@ class PolicyDecisionServiceTests(TestCase):
             subject_value="",
             is_allowed=True,
         )
-        self.assertEqual(is_allowed(user, "x", "y"), decide(user, "x", "y").allowed)
-        self.assertIsInstance(decide(user, "x", "y"), PolicyDecision)
+        decision = decide(user, "x", "y")
+        self.assertEqual(is_allowed(user, "x", "y"), decision.allowed)
+        self.assertIsInstance(decision, PolicyDecision)
 
 
 class AuthFlowTests(APITestCase):
