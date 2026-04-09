@@ -95,6 +95,16 @@ Planned variables:
 - `CORS_ALLOWED_ORIGINS` (if cross-origin clients are used)
 - `ACCESS_TOKEN_TTL_MINUTES` / `SESSION_TTL_MINUTES`
 
+## Demo showcase accounts (local / recruitment only)
+
+After `python manage.py migrate`, migration `0008_seed_demo_showcase_users` creates fixed accounts for functional demos. **Do not use these credentials in production.**
+
+| Email | Password | Purpose |
+| ----- | -------- | --------- |
+| `demo.member@example.com` | `DemoShowcase2026!` | Bound to role `member`; `widgets:list` is granted via the RBAC matrix from `0006`. |
+| `demo.staff@example.com` | same | `is_staff=True`; satisfies `AuthPolicyRule` allow for `admin:manage` (see `0007`). |
+| `demo.plain@example.com` | same | No `UserRole`; authenticated but no matrix grant for `widgets` (deny-by-default for that resource). |
+
 ## Security Considerations
 
 Key controls:

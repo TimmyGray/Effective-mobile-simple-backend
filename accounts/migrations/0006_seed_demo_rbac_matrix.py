@@ -4,7 +4,7 @@ from django.db import migrations
 def seed_demo_rbac_matrix(apps, schema_editor):
     """
     Minimal demo data for recruitment-task RBAC: role + matrix row so the schema is visibly populated.
-    User bindings are created in tests or admin flows (see B-H3).
+    Demo user bindings are created in migration `0008_seed_demo_showcase_users` (B-H3).
     """
     Role = apps.get_model("accounts", "Role")
     AccessPermission = apps.get_model("accounts", "AccessPermission")
