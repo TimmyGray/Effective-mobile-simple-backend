@@ -82,10 +82,10 @@ Not applicable for current scope. This repository is currently backend-focused.
 
 | Layer | Technology |
 | ----- | ---------- |
-| Backend | Django + DRF (planned) |
+| Backend | Django + DRF |
 | Frontend | N/A |
-| Database | PostgreSQL (planned) |
-| Testing | pytest + pytest-django (planned) |
+| Database | PostgreSQL when `DATABASE_URL` or `POSTGRES_HOST`/`PGHOST` is set; otherwise SQLite (`db.sqlite3`) for local dev and optional quick runs |
+| Testing | pytest + pytest-django |
 | Build | Python packaging + migration workflow |
 
 ## Environment Variables
