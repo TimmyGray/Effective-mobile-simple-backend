@@ -45,7 +45,7 @@ Machine-readable task backlog. Single source of truth for all work items.
 |----|------|------|--------|--------|-------|
 | B-H1 | Implement user profile update and soft-delete (`is_active=False`) with forced logout | backend | 1d | done | Merged PR #5; PATCH/DELETE `/api/auth/me`, inactive session logout |
 | B-H2 | Build admin-only API for managing roles, permissions, and access rules | backend | 2d | done | Merged PR #6; staff + `admin:manage`; CRUD + grants; migration `0007_seed_admin_manage_policy` |
-| B-H3 | Seed DB with demo users, roles, permissions, and bindings for showcase scenarios | backend | 0.5d | todo | Required for functional demonstration |
+| B-H3 | Seed DB with demo users, roles, permissions, and bindings for showcase scenarios | backend | 0.5d | done | Merged PR #7; migration `0008_seed_demo_showcase_users` + `ARCHITECTURE.md` demo table |
 
 ## Medium Priority
 
