@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from django.contrib.auth.base_user import AbstractBaseUser
 
-from accounts.models import AuthPolicyRule
+from accounts.models import AuthPolicyRule, UserRole
 
 
 @dataclass(frozen=True)
@@ -24,9 +24,10 @@ class PolicyDecision:
 def _user_roles(user: AbstractBaseUser) -> list[str]:
     """
     AI Annotation:
-    - Purpose: Map Django user privilege flags to policy role keys used in `AuthPolicyRule`.
+    - Purpose: Map Django user privilege flags and persisted role bindings to policy role keys.
     - Inputs: Authenticated user instance.
     - Outputs: List of role strings evaluated by role-scoped rules.
+    - Side effects: Reads `UserRole` rows when the user has a primary key.
     """
 
     roles: list[str] = []
@@ -34,7 +35,12 @@ def _user_roles(user: AbstractBaseUser) -> list[str]:
         roles.append("staff")
     if user.is_superuser:
         roles.append("superuser")
-    return roles
+    pk = getattr(user, "pk", None)
+    if pk:
+        roles.extend(
+            UserRole.objects.filter(user_id=pk).values_list("role__name", flat=True),
+        )
+    return list(dict.fromkeys(roles))
 
 
 def _rule_applies(rule: AuthPolicyRule, user: AbstractBaseUser) -> bool:

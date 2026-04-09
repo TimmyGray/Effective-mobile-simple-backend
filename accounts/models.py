@@ -92,3 +92,70 @@ class AuthPolicyRule(models.Model):
                 name="uniq_auth_policy_rule_subject",
             ),
         ]
+
+
+class Role(models.Model):
+    """
+    Named security role; referenced by policy rules (subject_type=role) and user bindings.
+    """
+
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, default="")
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class AccessPermission(models.Model):
+    """
+    A grantable capability: a (resource, action) pair used in the role matrix.
+    """
+
+    resource = models.CharField(max_length=100)
+    action = models.CharField(max_length=100)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["resource", "action"],
+                name="uniq_access_permission_resource_action",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.resource}:{self.action}"
+
+
+class RolePermission(models.Model):
+    """
+    Grants an access permission to a role (role matrix entry).
+    """
+
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name="role_permissions")
+    access_permission = models.ForeignKey(
+        AccessPermission,
+        on_delete=models.CASCADE,
+        related_name="role_grants",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["role", "access_permission"],
+                name="uniq_role_access_permission",
+            ),
+        ]
+
+
+class UserRole(models.Model):
+    """
+    Binds a user to a named role for policy evaluation.
+    """
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_roles")
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name="user_bindings")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "role"], name="uniq_user_role"),
+        ]
