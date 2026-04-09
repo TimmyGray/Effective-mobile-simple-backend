@@ -7,6 +7,13 @@ User = get_user_model()
 
 
 def is_allowed(user: User, resource: str, action: str) -> bool:
+    """
+    AI Annotation:
+    - Purpose: Evaluate centralized allow rules for a user/resource/action tuple.
+    - Inputs: Requires an authenticated active user plus non-empty resource/action keys.
+    - Outputs: Returns True on first matching allow rule; otherwise False (deny by default).
+    - Security notes: Applies global, user, and role-based policy checks in precedence order.
+    """
     if not user.is_authenticated or not user.is_active:
         return False
     if AuthPolicyRule.objects.filter(
