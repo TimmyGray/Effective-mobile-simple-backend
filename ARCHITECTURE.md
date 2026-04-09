@@ -70,6 +70,10 @@ Planned data model (high level):
 
 **Runtime evaluation (`accounts.policy.decide`):** explicit `AuthPolicyRule` denies first, then explicit allows, then the **RBAC matrix** — access is granted if the user has a bound role whose `RolePermission` row references an `AccessPermission` with the same `(resource, action)` as the request. If nothing matches, the decision is deny-by-default.
 
+## Operations & health
+
+- **Liveness / readiness:** `GET /health/live` returns `200` when the process serves HTTP; `GET /health/ready` checks the default database via `connection.ensure_connection()` and returns `503` when the DB is unreachable. Implemented as plain Django views in `config.health` (not DRF), so default API authentication does not apply.
+
 ## Frontend Architecture
 
 Not applicable for current scope. This repository is currently backend-focused.
