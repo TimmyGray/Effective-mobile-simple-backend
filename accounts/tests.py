@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.test import override_settings
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -44,9 +45,73 @@ class AuthFlowTests(APITestCase):
             {"email": "user@example.com", "password": "WrongPassword123!"},
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("non_field_errors", response.data)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertIn("detail", response.data)
 
     def test_me_unauthenticated_returns_401(self) -> None:
         response = self.client.get("/api/auth/me")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_logout_unauthenticated_returns_401(self) -> None:
+        response = self.client.post("/api/auth/logout")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_authenticated_forbidden_path_returns_403(self) -> None:
+        User.objects.create_user(email="user@example.com", password="StrongPass123!")
+        self.client.post(
+            "/api/auth/login",
+            {"email": "user@example.com", "password": "StrongPass123!"},
+            format="json",
+        )
+        response = self.client.get("/api/auth/admin-probe")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_login_disabled_user_returns_401_with_generic_message(self) -> None:
+        user = User.objects.create_user(email="user@example.com", password="StrongPass123!")
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+
+        response = self.client.post(
+            "/api/auth/login",
+            {"email": "user@example.com", "password": "StrongPass123!"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(str(response.data.get("detail")), "Invalid credentials.")
+
+    @override_settings(
+        REST_FRAMEWORK={
+            "DEFAULT_AUTHENTICATION_CLASSES": [
+                "rest_framework.authentication.SessionAuthentication",
+            ],
+            "DEFAULT_PERMISSION_CLASSES": [
+                "rest_framework.permissions.IsAuthenticated",
+            ],
+            "DEFAULT_THROTTLE_CLASSES": [
+                "rest_framework.throttling.AnonRateThrottle",
+                "rest_framework.throttling.UserRateThrottle",
+            ],
+            "DEFAULT_THROTTLE_RATES": {
+                "anon": "100/min",
+                "user": "100/min",
+                "auth_login": "3/min",
+                "auth_register": "5/min",
+            },
+        }
+    )
+    def test_login_throttle_returns_429_when_limit_exceeded(self) -> None:
+        User.objects.create_user(email="user@example.com", password="StrongPass123!")
+        for _ in range(3):
+            response = self.client.post(
+                "/api/auth/login",
+                {"email": "user@example.com", "password": "WrongPassword123!"},
+                format="json",
+            )
+            self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        throttled_response = self.client.post(
+            "/api/auth/login",
+            {"email": "user@example.com", "password": "WrongPassword123!"},
+            format="json",
+        )
+        self.assertEqual(throttled_response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)

@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate
 from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed
 
 from accounts.models import User
 
@@ -30,9 +31,9 @@ class LoginSerializer(serializers.Serializer):
             password=attrs["password"],
         )
         if not user:
-            raise serializers.ValidationError("Invalid credentials.")
+            raise AuthenticationFailed("Invalid credentials.")
         if not user.is_active:
-            raise serializers.ValidationError("User account is disabled.")
+            raise AuthenticationFailed("Invalid credentials.")
         attrs["user"] = user
         return attrs
 

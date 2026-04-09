@@ -33,6 +33,8 @@ Implement a custom authentication flow (register/login/logout/session identity) 
 - Chose Django session-based auth for login/logout baseline because it supports immediate identity resolution and keeps auth semantics explicit.
 - Chose custom `User` model with `email` as `USERNAME_FIELD` to satisfy custom auth requirement and avoid framework-default username-centric flow.
 - Added API tests first for expected `401` behavior and credential validation outcomes.
+- Switched to fail-fast secret key configuration and deny-by-default DRF permission defaults after security review.
+- Added centralized policy permission checks on protected auth endpoints plus a forbidden-path probe to verify `403` semantics.
 
 ## Risks / Open Questions
 

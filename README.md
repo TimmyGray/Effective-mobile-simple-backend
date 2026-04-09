@@ -205,6 +205,7 @@ This repository now includes a minimal Django + DRF backend implementing:
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
+copy .env.example .env
 python manage.py migrate
 python manage.py runserver
 ```
