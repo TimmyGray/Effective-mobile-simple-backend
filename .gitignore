@@ -10,3 +10,7 @@ docs/exec-plans/active-work.json
 # BMAD Agent framework and logs
 _bmad/
 _bmad-output/
+
+.claude/
+
+.cursor/
