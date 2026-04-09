@@ -17,6 +17,7 @@ This is the entrypoint for Claude Code in this repository. Keep it short and lin
 | Task backlog | `docs/exec-plans/tech-debt-tracker.md` |
 | Lint/test promotions log | `docs/exec-plans/promoted-rules-log.md` |
 | Workflow mechanics | `docs/WORKFLOW.md` |
+| Manual API checks (curl / HTTPie) | `docs/manual-api-checks.md` |
 
 ## Commands (Quick)
 
