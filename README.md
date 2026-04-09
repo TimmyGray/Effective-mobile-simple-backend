@@ -213,8 +213,13 @@ python manage.py runserver
 ### Run tests
 
 ```bash
-python manage.py test
+pip install -r requirements-dev.txt
+set DJANGO_SECRET_KEY=local-dev-not-secret
+set DEBUG=true
+pytest
 ```
+
+(`python manage.py test accounts` still works if you prefer Django’s runner.)
 
 ### Optional smoke test (against runserver)
 

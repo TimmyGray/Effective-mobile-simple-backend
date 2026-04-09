@@ -8,7 +8,7 @@ Baseline captured during `/setup-workflow` on 2026-04-09.
 
 | Suite | Files | Tests | Pass Rate |
 |-------|-------|-------|-----------|
-| Backend (`manage.py test accounts`) | 1 | 40 | 100% |
+| Backend (`pytest`, `accounts/`) | 1 | 40 | 100% |
 | Frontend | N/A | N/A | N/A |
 | **Total** | 1 | 40 | 100% |
 
@@ -16,18 +16,18 @@ Baseline captured during `/setup-workflow` on 2026-04-09.
 
 | Check | Errors | Warnings |
 |-------|--------|----------|
-| Backend Lint | NOT CONFIGURED | 0 |
+| Backend Lint (`ruff check .`) | 0 | 0 |
 | Frontend Lint | N/A | N/A |
-| Backend Types | NOT CONFIGURED | 0 |
+| Backend Types (`mypy -p config`) | 0 | 0 |
 | Frontend Types | N/A | N/A |
-| Backend Build | NOT CONFIGURED | 0 |
+| Backend Build (`python manage.py check`) | 0 | 0 |
 | Frontend Build | N/A | N/A |
 
 ## Dependencies
 
 | Scope | Packages | Outdated | Vulnerabilities |
 |-------|----------|----------|-----------------|
-| Backend | NOT CONFIGURED | NOT CONFIGURED | NOT CONFIGURED |
+| Backend (`requirements.txt` + `requirements-dev.txt`) | See files | NOT CONFIGURED | NOT CONFIGURED |
 | Frontend | N/A | N/A | N/A |
 
 ## Tech Debt Status
@@ -36,7 +36,7 @@ Baseline captured during `/setup-workflow` on 2026-04-09.
 |----------|------|------|
 | Critical | 0 | 3 |
 | High | 0 | 3 |
-| Medium | 2 | 2 |
+| Medium | 1 | 3 |
 | Low | 2 | 0 |
 | Features | 2 | 1 |
 
@@ -47,3 +47,4 @@ Baseline captured during `/setup-workflow` on 2026-04-09.
 - 2026-04-09 (Phase 12 sweep): Cadence threshold met for sweep; removed unused `get_user_model` import in `accounts/admin_serializers.py`; `manage.py test accounts` — 31 passed. Audit and retrospective not due (counters 3/5 and 3/10).
 - 2026-04-09 (`/develop-feature` Phase 12 audit): `manage.py test accounts` — 40 passed; CLAUDE.md quick-reference paths verified; lint/types still not configured (B-M3).
 - 2026-04-09 (post-merge sweep, PR #8 on `main`): `manage.py test accounts` — 40 passed; `accounts/tests.py` ~691 lines (split into submodules deferred); no mechanical fixes applied.
+- 2026-04-09 (B-M3): `requirements-dev.txt` + `pyproject.toml` + GitHub Actions; `ruff check .`, `mypy -p config`, `pytest`, `manage.py check` — all clean with `DJANGO_SECRET_KEY` + `DEBUG=true`.
