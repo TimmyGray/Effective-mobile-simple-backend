@@ -7,9 +7,24 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
     env:
       DJANGO_SECRET_KEY: ci-django-secret-key-not-for-production
       DEBUG: "true"
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/testdb
     steps:
       - uses: actions/checkout@v4
 
