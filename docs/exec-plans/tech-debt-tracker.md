@@ -43,7 +43,7 @@ Machine-readable task backlog. Single source of truth for all work items.
 
 | ID | Task | Area | Effort | Status | Notes |
 |----|------|------|--------|--------|-------|
-| B-H1 | Implement user profile update and soft-delete (`is_active=False`) with forced logout | backend | 1d | todo | Soft-deleted users must not be able to login again |
+| B-H1 | Implement user profile update and soft-delete (`is_active=False`) with forced logout | backend | 1d | done | Merged PR #5; PATCH/DELETE `/api/auth/me`, inactive session logout |
 | B-H2 | Build admin-only API for managing roles, permissions, and access rules | backend | 2d | todo | Include grant/revoke flows and permission safeguards |
 | B-H3 | Seed DB with demo users, roles, permissions, and bindings for showcase scenarios | backend | 0.5d | todo | Required for functional demonstration |
 

@@ -30,3 +30,7 @@ Implement user profile update and soft-delete (`is_active=False`) with forced lo
 ## Risks
 
 - Property-based `policy_action` must remain compatible with `EnforcedAuthzPermission` (view instance has `request`).
+
+## Completion
+
+- Shipped in https://github.com/TimmyGray/Effective-mobile-simple-backend/pull/5 (merged 2026-04-09).

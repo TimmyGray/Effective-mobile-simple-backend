@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "counters": {
-    "features_since_last_sweep": 1,
-    "features_since_last_audit": 1,
-    "features_since_last_retrospective": 1
+    "features_since_last_sweep": 2,
+    "features_since_last_audit": 2,
+    "features_since_last_retrospective": 2
   },
   "thresholds": {
     "sweep_every_n_features": 3,
