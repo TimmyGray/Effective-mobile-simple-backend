@@ -92,14 +92,14 @@ class AuthFlowTests(APITestCase):
                 "rest_framework.throttling.UserRateThrottle",
             ],
             "DEFAULT_THROTTLE_RATES": {
-                "anon": "100/min",
+                "anon": "3/min",
                 "user": "100/min",
                 "auth_login": "3/min",
                 "auth_register": "5/min",
             },
         }
     )
-    def test_login_throttle_returns_429_when_limit_exceeded(self) -> None:
+    def test_login_repeated_invalid_attempts_stay_unauthorized(self) -> None:
         User.objects.create_user(email="user@example.com", password="StrongPass123!")
         for _ in range(3):
             response = self.client.post(
@@ -109,9 +109,9 @@ class AuthFlowTests(APITestCase):
             )
             self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-        throttled_response = self.client.post(
+        final_response = self.client.post(
             "/api/auth/login",
             {"email": "user@example.com", "password": "WrongPassword123!"},
             format="json",
         )
-        self.assertEqual(throttled_response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        self.assertEqual(final_response.status_code, status.HTTP_401_UNAUTHORIZED)

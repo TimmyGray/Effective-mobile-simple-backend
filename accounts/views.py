@@ -1,6 +1,6 @@
 from django.contrib.auth import login, logout
 from rest_framework import permissions, status
-from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -11,8 +11,7 @@ from accounts.serializers import LoginSerializer, RegisterSerializer, UserSerial
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
-    throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "auth_register"
+    throttle_classes = [AnonRateThrottle]
 
     def post(self, request: Request) -> Response:
         serializer = RegisterSerializer(data=request.data)
@@ -23,8 +22,7 @@ class RegisterView(APIView):
 
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
-    throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "auth_login"
+    throttle_classes = [AnonRateThrottle]
 
     def post(self, request: Request) -> Response:
         serializer = LoginSerializer(data=request.data, context={"request": request})
