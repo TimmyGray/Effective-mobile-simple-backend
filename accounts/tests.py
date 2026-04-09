@@ -619,7 +619,7 @@ class DemoShowcaseSeedTests(TestCase):
     AI Annotation:
     - Purpose: Lock in B-H3 migration seed — demo users, member binding, and policy outcomes.
     - Inputs: Test DB after migrations (includes `0008_seed_demo_showcase_users`).
-    - Security notes: Asserts fixed demo emails only; password is verified via Django check_password in isolation below.
+    - Security notes: Asserts stable demo emails and policy behavior; password hashing is covered by migration + Django.
     """
 
     def test_demo_users_exist_with_expected_flags(self) -> None:
