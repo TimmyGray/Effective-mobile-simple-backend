@@ -92,3 +92,70 @@ class AuthPolicyRule(models.Model):
                 name="uniq_auth_policy_rule_subject",
             ),
         ]
+
+
+class Role(models.Model):
+    """
+    Named security role; users are bound via `UserRole` and granted capabilities via `RolePermission`.
+    """
+
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, default="")
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class AccessPermission(models.Model):
+    """
+    Grantable capability: a (resource, action) pair evaluated by `policy.decide()`.
+    """
+
+    resource = models.CharField(max_length=100)
+    action = models.CharField(max_length=100)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["resource", "action"],
+                name="uniq_access_permission_resource_action",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.resource}:{self.action}"
+
+
+class RolePermission(models.Model):
+    """
+    Matrix entry: grants one access permission to a role.
+    """
+
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name="role_permissions")
+    access_permission = models.ForeignKey(
+        AccessPermission,
+        on_delete=models.CASCADE,
+        related_name="role_grants",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["role", "access_permission"],
+                name="uniq_role_access_permission",
+            ),
+        ]
+
+
+class UserRole(models.Model):
+    """
+    Binds a user to a named role for matrix-based authorization and `AuthPolicyRule` subject_type=role.
+    """
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_roles")
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name="user_bindings")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "role"], name="uniq_user_role"),
+        ]
