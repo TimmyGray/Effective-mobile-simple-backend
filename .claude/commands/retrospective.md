@@ -66,9 +66,9 @@ If a prompt-level promotion was previously made:
 - Run validation to verify changes
 
 ### 6. Update Learning Memory
-Write key learnings to Claude Code auto-memory files:
+Write key learnings to project-local memory (this repo: `.claude/memory/`):
 - `patterns.md` — successful patterns to repeat
-- `pitfalls.md` — mistakes to avoid
+- `pitfalls.md` — mistakes to avoid (tag entries by category for Phase 9b counting)
 
 ### 7. Report
 Present:

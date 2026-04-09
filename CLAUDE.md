@@ -15,6 +15,7 @@ This is the entrypoint for Claude Code in this repository. Keep it short and lin
 | Baseline quality metrics | `docs/QUALITY_SCORE.md` |
 | Engineering principles | `docs/design-docs/core-beliefs.md` |
 | Task backlog | `docs/exec-plans/tech-debt-tracker.md` |
+| Lint/test promotions log | `docs/exec-plans/promoted-rules-log.md` |
 | Workflow mechanics | `docs/WORKFLOW.md` |
 
 ## Commands (Quick)

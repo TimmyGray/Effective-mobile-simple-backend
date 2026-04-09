@@ -185,7 +185,7 @@ Read `.claude/commands/review-pr.md` and follow **every** step:
    - `PROC` — Workflow/process bug
    - `MODEL` — Incomplete mental model
    - `COPY` — Copy-paste drift
-3. **Write structured entries** to `pitfalls.md` in the Claude Code auto-memory directory
+3. **Write structured entries** to `.claude/memory/pitfalls.md`
 4. **Check promotion threshold**: If 2+ occurrences of the same category, promote:
    - `CONV` → Update `docs/CONVENTIONS.md` + `review-pr.md` agent prompt
    - `RAIL` → Add lint rule or architecture test
