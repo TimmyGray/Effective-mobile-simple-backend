@@ -261,3 +261,29 @@ class AuthFlowTests(APITestCase):
             HTTP_X_CSRFTOKEN=csrf_token,
         )
         self.assertEqual(final_response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class AuthHttpSemanticsTests(APITestCase):
+    """
+    B-C3 regression: unauthenticated clients must receive 401 (not 403) on protected routes;
+    authenticated-but-forbidden clients receive 403.
+    """
+
+    def test_csrf_unauthenticated_returns_200(self) -> None:
+        response = self.client.get("/api/auth/csrf")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("csrfToken", response.data)
+
+    def test_register_unauthenticated_returns_201(self) -> None:
+        csrf = self.client.get("/api/auth/csrf").data["csrfToken"]
+        response = self.client.post(
+            "/api/auth/register",
+            {"email": "newuser@example.com", "password": "StrongPass123!"},
+            format="json",
+            HTTP_X_CSRFTOKEN=str(csrf),
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_admin_probe_unauthenticated_returns_401(self) -> None:
+        response = self.client.get("/api/auth/admin-probe")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

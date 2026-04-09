@@ -1,3 +1,4 @@
+from rest_framework.exceptions import NotAuthenticated, PermissionDenied
 from rest_framework.permissions import BasePermission
 
 from accounts.policy import is_allowed
@@ -9,14 +10,19 @@ class PolicyPermission(BasePermission):
         AI Annotation:
         - Purpose: Apply policy-based authorization for views that expose resource/action metadata.
         - Inputs: Expects request.user and view attributes `policy_resource` and `policy_action`.
-        - Outputs: Returns boolean authorization decision from centralized policy evaluator.
-        - Failure modes: Missing policy metadata causes an immediate deny.
+        - Outputs: Returns True when allowed; otherwise raises DRF auth exceptions (401/403).
+        - Failure modes: Missing policy metadata raises PermissionDenied (403).
+        - Security notes: Unauthenticated callers raise NotAuthenticated (401) before policy checks.
         """
         resource = getattr(view, "policy_resource", None)
         action = getattr(view, "policy_action", None)
         if not resource or not action:
-            return False
-        return is_allowed(request.user, resource, action)
+            raise PermissionDenied()
+        if not request.user or not request.user.is_authenticated:
+            raise NotAuthenticated()
+        if not is_allowed(request.user, resource, action):
+            raise PermissionDenied()
+        return True
 
 
 class EnforcedAuthzPermission(BasePermission):
@@ -31,15 +37,19 @@ class EnforcedAuthzPermission(BasePermission):
         AI Annotation:
         - Purpose: Enforce global deny-by-default access control for all API views.
         - Inputs: Uses optional `auth_public` plus required `policy_resource`/`policy_action`.
-        - Outputs: Returns True only for explicit public access or positive policy decisions.
-        - Security notes: Prevents accidental exposure by denying anonymous or unannotated views.
+        - Outputs: Returns True for public or allowed requests; raises DRF exceptions otherwise.
+        - Failure modes: Missing view policy metadata raises PermissionDenied (misconfiguration).
+        - Security notes: Unauthenticated access raises NotAuthenticated (401); failed policy raises
+          PermissionDenied (403). Explicit exceptions avoid relying on DRF `permission_denied` heuristics.
         """
         if getattr(view, "auth_public", False):
             return True
         if not request.user or not request.user.is_authenticated:
-            return False
+            raise NotAuthenticated()
         resource = getattr(view, "policy_resource", None)
         action = getattr(view, "policy_action", None)
         if not resource or not action:
-            return False
-        return is_allowed(request.user, resource, action)
+            raise PermissionDenied()
+        if not is_allowed(request.user, resource, action):
+            raise PermissionDenied()
+        return True

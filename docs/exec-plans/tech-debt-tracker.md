@@ -37,7 +37,7 @@ Machine-readable task backlog. Single source of truth for all work items.
 |----|------|------|--------|--------|-------|
 | B-C1 | Implement custom authentication flow (register/login/logout/session identity) with secure password handling | backend | 2d | todo | Core recruitment requirement; must not rely only on framework defaults |
 | B-C2 | Implement authorization schema and policy decision service for (user, resource, action) checks | backend | 2d | done | Merged PR #3; `decide()` + deny-before-allow; `AuthPolicyRule` persisted |
-| B-C3 | Enforce exact `401` and `403` behavior across protected APIs | backend | 0.5d | todo | `401` unauthenticated, `403` authenticated but forbidden |
+| B-C3 | Enforce exact `401` and `403` behavior across protected APIs | backend | 0.5d | done | Explicit `NotAuthenticated`/`PermissionDenied` in `EnforcedAuthzPermission`; regression tests |
 
 ## High Priority
 
