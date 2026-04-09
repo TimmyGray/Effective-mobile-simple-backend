@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-04-09T17:24:43.8510363+03:00",
+  "project_context": "project-aware",
+  "agents": [
+    {
+      "name": "backend-agent",
+      "path": ".claude/agents/backend-agent/",
+      "description": "Builds backend APIs and auth services. Use when implementing Django/DRF backend features and access-control flows.",
+      "capabilities": [
+        "implement-feature",
+        "review-code",
+        "api-design"
+      ]
+    },
+    {
+      "name": "architect-agent",
+      "path": ".claude/agents/architect-agent/",
+      "description": "Shapes system architecture and technical direction. Use when making cross-cutting backend design decisions and debt strategy.",
+      "capabilities": [
+        "design-system",
+        "review-architecture",
+        "tech-debt-analysis"
+      ]
+    },
+    {
+      "name": "tester-agent",
+      "path": ".claude/agents/tester-agent/",
+      "description": "Builds and evaluates test coverage. Use when writing pytest coverage and validating backend reliability behavior.",
+      "capabilities": [
+        "write-tests",
+        "coverage-analysis"
+      ]
+    },
+    {
+      "name": "reviewer-agent",
+      "path": ".claude/agents/reviewer-agent/",
+      "description": "Performs strict project-aware code reviews. Use when evaluating PR quality, security, and convention adherence.",
+      "capabilities": [
+        "review-pr"
+      ]
+    },
+    {
+      "name": "planner-agent",
+      "path": ".claude/agents/planner-agent/",
+      "description": "Plans roadmap execution and backlog priorities. Use when sequencing work and estimating effort from project constraints.",
+      "capabilities": [
+        "plan-sprint",
+        "prioritize-backlog",
+        "memory-system"
+      ]
+    },
+    {
+      "name": "researcher-agent",
+      "path": ".claude/agents/researcher-agent/",
+      "description": "Researches market and technical feasibility. Use when validating roadmap ideas against external evidence and ecosystem trends.",
+      "capabilities": [
+        "market-research",
+        "tech-feasibility"
+      ]
+    }
+  ]
+}

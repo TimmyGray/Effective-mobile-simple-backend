@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "patched_at": "2026-04-09T17:24:43.8510363+03:00",
+  "patches": [
+    {
+      "command": ".claude/commands/develop-feature.md",
+      "hook_id": "implementation-routing",
+      "agent": "backend-agent",
+      "phase": "Phase 4 implementation routing"
+    },
+    {
+      "command": ".claude/commands/develop-feature.md",
+      "hook_id": "reviewer-delegation",
+      "agent": "reviewer-agent",
+      "phase": "Phase 9 quality gate delegation"
+    },
+    {
+      "command": ".claude/commands/develop-feature.md",
+      "hook_id": "planner-maintenance",
+      "agent": "planner-agent",
+      "phase": "Phase 12 maintenance assessment"
+    },
+    {
+      "command": ".claude/commands/review-pr.md",
+      "hook_id": "specialist-reviewers",
+      "agent": "reviewer-agent",
+      "phase": "Section 2 parallel specialized reviews"
+    },
+    {
+      "command": ".claude/commands/sweep.md",
+      "hook_id": "sweep-specialists",
+      "agent": "architect-agent",
+      "phase": "Section 2 violation scan delegation"
+    },
+    {
+      "command": ".claude/commands/add-feature.md",
+      "hook_id": "planner-classification",
+      "agent": "planner-agent",
+      "phase": "Phase 3 backlog classification"
+    },
+    {
+      "command": ".claude/commands/audit-service.md",
+      "hook_id": "audit-specialists",
+      "agent": "architect-agent",
+      "phase": "Section 2 code quality scan delegation"
+    }
+  ]
+}
