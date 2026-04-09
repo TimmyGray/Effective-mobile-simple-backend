@@ -6,6 +6,13 @@ class UserManager(BaseUserManager["User"]):
     use_in_migrations = True
 
     def _create_user(self, email: str, password: str, **extra_fields: object) -> "User":
+        """
+        AI Annotation:
+        - Purpose: Centralize low-level user creation for regular and superuser flows.
+        - Inputs: Requires email and raw password plus model-specific extra fields.
+        - Side effects: Persists a new user row and hashes password before save.
+        - Failure modes: Raises ValueError when email is missing.
+        """
         if not email:
             raise ValueError("Email must be set")
         normalized_email = self.normalize_email(email)
@@ -15,6 +22,13 @@ class UserManager(BaseUserManager["User"]):
         return user
 
     def create_user(self, email: str, password: str | None = None, **extra_fields: object) -> "User":
+        """
+        AI Annotation:
+        - Purpose: Create a standard non-privileged account with safe defaults.
+        - Inputs: Email and non-null password with optional profile fields.
+        - Outputs: Returns persisted User instance with `is_staff`/`is_superuser` forced false.
+        - Failure modes: Raises ValueError when password is omitted.
+        """
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
         if password is None:
@@ -27,6 +41,13 @@ class UserManager(BaseUserManager["User"]):
         password: str | None = None,
         **extra_fields: object,
     ) -> "User":
+        """
+        AI Annotation:
+        - Purpose: Create a privileged administrative account with enforced flags.
+        - Inputs: Email and non-null password, with optional overriding fields.
+        - Outputs: Returns persisted User instance configured for admin access.
+        - Security notes: Explicitly validates `is_staff` and `is_superuser` to prevent misconfiguration.
+        """
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         if extra_fields.get("is_staff") is not True:
