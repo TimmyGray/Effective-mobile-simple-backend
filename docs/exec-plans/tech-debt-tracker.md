@@ -68,5 +68,5 @@ Machine-readable task backlog. Single source of truth for all work items.
 | ID | Task | Area | Effort | Status | Notes |
 |----|------|------|--------|--------|-------|
 | FEAT-1 | Add remote repo check to setup-workflow command | workflow | 0.25d | done | Phase 0: detect remote, offer to create via gh CLI |
-| FEAT-2 | Build recruitment-task backend skeleton with Django + DRF + Postgres baseline | backend | 1d | todo | Foundation feature aligned with user priority: backend-first implementation |
+| FEAT-2 | Build recruitment-task backend skeleton with Django + DRF + Postgres baseline | backend | 1d | done | Merged PR #13; `config.database` + `psycopg`; CI Postgres service |
 | FEAT-3 | Improve workflow for manual API checks (curl/httpie): documented steps, CSRF cookie/header, 401 vs 403 probes, optional small script under `docs/` or `scripts/` | workflow | 0.25d | todo | Aligns with auth semantics; complements automated tests |
