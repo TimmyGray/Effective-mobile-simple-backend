@@ -33,13 +33,14 @@ Not applicable for current repository scope.
 
 ## Mechanically Enforced Rules
 
-Current status: not configured yet (no linter/type/test toolchain committed yet).
+Baseline (see `requirements-dev.txt`, `pyproject.toml`, `.github/workflows/ci.yml`):
 
-Planned baseline:
-1. `ruff` for style and basic static analysis.
-2. `pytest` + `pytest-django` for test enforcement.
-3. Optional `mypy` for stricter typing once project structure stabilizes.
-4. Architecture tests for authz boundaries (policy checks required on protected routes).
+1. **`ruff check .`** — style and basic static analysis (Ruff defaults).
+2. **`pytest`** — Django tests under `accounts/` via `pytest-django`.
+3. **`mypy -p config`** — typecheck Django settings package; `accounts` is deferred until gradual typing.
+4. GitHub Actions runs the same checks on every pull request.
+
+Planned: architecture tests for authz boundaries (policy checks required on protected routes).
 
 ## Environment
 

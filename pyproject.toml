@@ -1,0 +1,36 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["accounts", "config"]
+exclude = [
+    ".venv",
+    ".git",
+    ".claude",
+    "_bmad",
+    "**/migrations/**",
+]
+
+# Lint rules: Ruff defaults (E4/E7/E9 + Pyflakes). Tighten with extend-select later.
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+testpaths = ["accounts"]
+addopts = "-q"
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main"]
+explicit_package_bases = true
+mypy_path = "."
+show_error_codes = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings"
+
+# django-stubs loads INSTALLED_APPS; `accounts` is ignored until gradual typing.
+[[tool.mypy.overrides]]
+module = "accounts.*"
+ignore_errors = true
+
+# Baseline: `mypy -p config` exercises settings and project wiring.

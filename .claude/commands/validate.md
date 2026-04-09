@@ -6,12 +6,12 @@ Run all validation checks and report results.
 
 Run each check and record pass/fail. Use this backend-first command order:
 
-1. **Lint**: `ruff check .` (if configured)
-2. **Typecheck**: `mypy .` (if configured)
-3. **Tests**: `pytest` (if configured)
-4. **Build/Runtime sanity**: `python manage.py check` (if Django app exists)
+1. **Lint**: `ruff check .` (requires `pip install -r requirements-dev.txt`)
+2. **Typecheck**: `mypy -p config` (Django project package; requires dev deps; set `DJANGO_SECRET_KEY` and `DEBUG=true`)
+3. **Tests**: `pytest` (collects `accounts` tests only; set `DJANGO_SECRET_KEY` and `DEBUG=true`)
+4. **Build/Runtime sanity**: `python manage.py check` (set `DJANGO_SECRET_KEY` and `DEBUG=true`)
 
-If a command is not configured yet, mark it as `NOT CONFIGURED` rather than failing silently.
+If dev dependencies are missing, mark the affected check as `NOT CONFIGURED` rather than failing silently.
 
 ## Staged Completeness Check
 

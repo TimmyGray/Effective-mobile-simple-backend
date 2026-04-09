@@ -21,10 +21,17 @@ This is the entrypoint for Claude Code in this repository. Keep it short and lin
 
 ```bash
 python -m venv .venv && .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements.txt -r requirements-dev.txt
 python manage.py runserver
-pytest
+```
+
+**Validate (lint, typecheck, tests, Django check)** — after installing dev deps, set `DJANGO_SECRET_KEY` and `DEBUG=true`, then:
+
+```bash
 ruff check .
+mypy -p config
+pytest
+python manage.py check
 ```
 
 ## Workflow Commands
