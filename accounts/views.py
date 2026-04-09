@@ -1,6 +1,4 @@
 from django.contrib.auth import login, logout
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_protect
 from rest_framework import permissions, status
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.request import Request
@@ -11,7 +9,6 @@ from accounts.permissions import PolicyPermission
 from accounts.serializers import LoginSerializer, RegisterSerializer, UserSerializer
 
 
-@method_decorator(csrf_protect, name="dispatch")
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
     throttle_classes = [ScopedRateThrottle]
@@ -24,7 +21,6 @@ class RegisterView(APIView):
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
-@method_decorator(csrf_protect, name="dispatch")
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
     throttle_classes = [ScopedRateThrottle]
