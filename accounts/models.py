@@ -96,7 +96,8 @@ class AuthPolicyRule(models.Model):
 
 class Role(models.Model):
     """
-    Named security role; referenced by policy rules (subject_type=role) and user bindings.
+    Named security role; users are bound via `UserRole` and granted capabilities via `RolePermission`.
+    Referenced by `AuthPolicyRule` subject_type=role and by the RBAC matrix.
     """
 
     name = models.CharField(max_length=100, unique=True)
@@ -108,7 +109,7 @@ class Role(models.Model):
 
 class AccessPermission(models.Model):
     """
-    A grantable capability: a (resource, action) pair used in the role matrix.
+    Grantable capability: a (resource, action) pair evaluated by `policy.decide()` via the matrix.
     """
 
     resource = models.CharField(max_length=100)
@@ -128,7 +129,7 @@ class AccessPermission(models.Model):
 
 class RolePermission(models.Model):
     """
-    Grants an access permission to a role (role matrix entry).
+    Matrix entry: grants one access permission to a role.
     """
 
     role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name="role_permissions")
@@ -149,7 +150,7 @@ class RolePermission(models.Model):
 
 class UserRole(models.Model):
     """
-    Binds a user to a named role for policy evaluation.
+    Binds a user to a named role for matrix-based authorization and `AuthPolicyRule` subject_type=role.
     """
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_roles")

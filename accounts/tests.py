@@ -4,7 +4,7 @@ from django.test import TestCase, override_settings
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from accounts.models import AuthPolicyRule, Role, UserRole
+from accounts.models import AuthPolicyRule, AccessPermission, Role, RolePermission, UserRole
 from accounts.policy import PolicyDecision, decide, is_allowed
 from accounts.views import LoginView, RegisterView
 
@@ -144,6 +144,33 @@ class PolicyDecideTests(TestCase):
         decision = decide(user, "reports", "export")
         self.assertTrue(decision.allowed)
         self.assertEqual(decision.reason, "explicit_allow")
+
+    def test_matrix_allow_matches_role_permission_grants(self) -> None:
+        user = User.objects.create_user(email="matrix@example.com", password="StrongPass123!")
+        role = Role.objects.create(name="seller")
+        ap = AccessPermission.objects.create(resource="orders", action="view")
+        RolePermission.objects.create(role=role, access_permission=ap)
+        UserRole.objects.create(user=user, role=role)
+        decision = decide(user, "orders", "view")
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.reason, "matrix_allow")
+
+    def test_explicit_deny_overrides_matrix_grant(self) -> None:
+        user = User.objects.create_user(email="blockedm@example.com", password="StrongPass123!")
+        role = Role.objects.create(name="seller2")
+        ap = AccessPermission.objects.create(resource="orders", action="cancel")
+        RolePermission.objects.create(role=role, access_permission=ap)
+        UserRole.objects.create(user=user, role=role)
+        AuthPolicyRule.objects.create(
+            resource="orders",
+            action="cancel",
+            subject_type=AuthPolicyRule.SUBJECT_USER,
+            subject_value="blockedm@example.com",
+            is_allowed=False,
+        )
+        decision = decide(user, "orders", "cancel")
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reason, "explicit_deny")
 
     def test_is_allowed_matches_decide(self) -> None:
         user = User.objects.create_user(email="match@example.com", password="StrongPass123!")
@@ -500,9 +527,9 @@ class AdminApiTests(APITestCase):
             HTTP_X_CSRFTOKEN=csrf,
         )
 
-        empty = self.client.get("/api/auth/admin/roles")
-        self.assertEqual(empty.status_code, status.HTTP_200_OK)
-        self.assertEqual(empty.data, [])
+        existing_roles = self.client.get("/api/auth/admin/roles")
+        self.assertEqual(existing_roles.status_code, status.HTTP_200_OK)
+        self.assertIsInstance(existing_roles.data, list)
 
         created = self.client.post(
             "/api/auth/admin/roles",

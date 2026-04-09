@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from django.contrib.auth.base_user import AbstractBaseUser
 
-from accounts.models import AuthPolicyRule, UserRole
+from accounts.models import AuthPolicyRule, RolePermission, UserRole
 
 
 @dataclass(frozen=True)
@@ -24,10 +24,10 @@ class PolicyDecision:
 def _user_roles(user: AbstractBaseUser) -> list[str]:
     """
     AI Annotation:
-    - Purpose: Map Django user privilege flags and persisted role bindings to policy role keys.
+    - Purpose: Map Django flags and persisted `UserRole` bindings to policy role keys for `AuthPolicyRule`.
     - Inputs: Authenticated user instance.
-    - Outputs: List of role strings evaluated by role-scoped rules.
-    - Side effects: Reads `UserRole` rows when the user has a primary key.
+    - Outputs: Deduped role name strings used in subject_type=role rules and audits.
+    - Side effects: Reads `UserRole` when the user has a primary key.
     """
 
     roles: list[str] = []
@@ -41,6 +41,26 @@ def _user_roles(user: AbstractBaseUser) -> list[str]:
             UserRole.objects.filter(user_id=pk).values_list("role__name", flat=True),
         )
     return list(dict.fromkeys(roles))
+
+
+def _matrix_grants(user: AbstractBaseUser, resource: str, action: str) -> bool:
+    """
+    AI Annotation:
+    - Purpose: RBAC matrix check — user has access if any bound role grants the (resource, action) pair.
+    - Inputs: Active authenticated user with pk; non-empty resource/action keys.
+    - Outputs: True when a `RolePermission` path exists for this user.
+    - Side effects: Single EXISTS query across role bindings and matrix.
+    - Security notes: Deny when user has no pk or no matching grant; does not bypass `AuthPolicyRule` denies.
+    """
+    pk = getattr(user, "pk", None)
+    if not pk:
+        return False
+
+    return RolePermission.objects.filter(
+        role__user_bindings__user_id=pk,
+        access_permission__resource=resource,
+        access_permission__action=action,
+    ).exists()
 
 
 def _rule_applies(rule: AuthPolicyRule, user: AbstractBaseUser) -> bool:
@@ -68,9 +88,9 @@ def decide(user: AbstractBaseUser, resource: str, action: str) -> PolicyDecision
     - Purpose: Central policy decision point for `(user, resource, action)` checks.
     - Inputs: Authenticated user plus non-empty resource/action keys matching view metadata.
     - Outputs: `PolicyDecision` with allow/deny outcome and a stable reason code.
-    - Side effects: Reads policy rows from the database (no writes).
+    - Side effects: Reads `AuthPolicyRule` rows and may query the RBAC matrix (no writes).
     - Failure modes: Inactive or anonymous users are denied without consulting allow rules.
-    - Security notes: Explicit deny rules are evaluated before allow rules; default is deny.
+    - Security notes: Explicit deny rules first, then explicit allow rules, then RBAC matrix allow; default deny.
     """
 
     if not user.is_authenticated or not user.is_active:
@@ -89,6 +109,9 @@ def decide(user: AbstractBaseUser, resource: str, action: str) -> PolicyDecision
     for rule in allows:
         if _rule_applies(rule, user):
             return PolicyDecision(True, "explicit_allow")
+
+    if _matrix_grants(user, resource, action):
+        return PolicyDecision(True, "matrix_allow")
 
     return PolicyDecision(False, "default_deny")
 

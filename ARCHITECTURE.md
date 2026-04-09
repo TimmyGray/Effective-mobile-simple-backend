@@ -68,6 +68,8 @@ Planned data model (high level):
 - `user_roles`: user-to-role assignments.
 - Optional direct grants/revocations for exceptional access.
 
+**Runtime evaluation (`accounts.policy.decide`):** explicit `AuthPolicyRule` denies first, then explicit allows, then the **RBAC matrix** — access is granted if the user has a bound role whose `RolePermission` row references an `AccessPermission` with the same `(resource, action)` as the request. If nothing matches, the decision is deny-by-default.
+
 ## Frontend Architecture
 
 Not applicable for current scope. This repository is currently backend-focused.

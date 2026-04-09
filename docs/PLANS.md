@@ -11,7 +11,8 @@
 
 - Add automated tests for authentication and authorization decision matrix.
 - Add input validation hardening and consistent error response format.
-- Introduce baseline linting and test commands for CI/local validation.
+- Introduce baseline linting, type checking, and test commands for CI/local validation (see backlog `B-M3`).
+- Document a manual API verification workflow (curl/httpie, CSRF) for quick checks (see backlog `FEAT-3`).
 - Add readiness/liveness endpoints and basic structured logging.
 
 ## Phase 3: Features
