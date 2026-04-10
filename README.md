@@ -199,13 +199,16 @@ Primary entities from `accounts/models.py`:
 
 ## Demo Seed Accounts
 
-After `python manage.py migrate`, demo users are seeded (for local/recruitment demos only):
+After `python manage.py migrate`, demo users are seeded (for local/recruitment demos only; see `accounts/migrations/0010_seed_demo_showcase_user_profiles.py`):
 
 | Email | Password | Typical behavior |
 | --- | --- | --- |
-| `demo.member@example.com` | `DemoShowcase2026!` | Authenticated, member-level matrix grants. |
-| `demo.staff@example.com` | `DemoShowcase2026!` | Staff user, can access admin management APIs when policy allows. |
-| `demo.plain@example.com` | `DemoShowcase2026!` | Authenticated with minimal/default access. |
+| `demo.member@example.com` | `DemoShowcase2026!` | Authenticated, `member` role bound (matrix grants). |
+| `demo.staff@example.com` | `DemoShowcase2026!` | Staff user; can access admin management APIs when policy allows. |
+| `demo.plain@example.com` | `DemoShowcase2026!` | Authenticated with minimal/default access (no `member` role). |
+| `demo.member2@example.com` | `DemoShowcase2026!` | Same pattern as `demo.member` (member role). |
+| `demo.member3@example.com` | `DemoShowcase2026!` | Same pattern as `demo.member` (member role). |
+| `demo.auditor@example.com` | `DemoShowcase2026!` | Authenticated, no `member` role (minimal/default access). |
 
 Do not use these credentials in production.
 
@@ -243,6 +246,7 @@ For CSRF/session flow and `401`/`403` probes:
 - `docs/manual-api-checks.md`
 - `python scripts/smoke_auth.py`
 - `python scripts/probe_auth_semantics.py http://127.0.0.1:8000`
+- `python scripts/probe_all_routes_curl.py` (optional: broader route/status sweep with curl)
 
 ## Project Documentation
 
