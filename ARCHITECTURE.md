@@ -105,9 +105,12 @@ After `python manage.py migrate`, migration `0008_seed_demo_showcase_users` crea
 
 | Email | Password | Purpose |
 | ----- | -------- | --------- |
-| `demo.member@example.com` | `DemoShowcase2026!` | Bound to role `member`; `widgets:list` is granted via the RBAC matrix from `0006`. |
-| `demo.staff@example.com` | same | `is_staff=True`; satisfies `AuthPolicyRule` allow for `admin:manage` (see `0007`). |
-| `demo.plain@example.com` | same | No `UserRole`; authenticated but no matrix grant for `widgets` (deny-by-default for that resource). |
+| `demo.member@example.com` | `DemoShowcase2026!` | Named profile populated; bound to role `member`; `widgets:list` granted via matrix from `0006`. |
+| `demo.staff@example.com` | same | Named profile populated; `is_staff=True`; satisfies `AuthPolicyRule` allow for `admin:manage` (see `0007`). |
+| `demo.plain@example.com` | same | Named profile populated; no `UserRole`; authenticated but no matrix grant for `widgets`. |
+| `demo.member2@example.com` | same | Named profile populated; additional member-role showcase user. |
+| `demo.member3@example.com` | same | Named profile populated; additional member-role showcase user. |
+| `demo.auditor@example.com` | same | Named profile populated; authenticated plain user without role grants. |
 
 ## Security Considerations
 

@@ -78,7 +78,7 @@ Expect `403` on the last line.
 
 ### Seeded demo users (after `migrate`)
 
-See `ARCHITECTURE.md` (Demo showcase accounts). You can log in with a fixed demo email/password and repeat the admin list call to observe `403` for `demo.member@example.com` or `200` for `demo.staff@example.com` without registering a new user.
+See `ARCHITECTURE.md` (Demo showcase accounts). Migrations now seed multiple demo users with full name fields (`first_name`, `last_name`, `middle_name`) and one fixed password, so you can log in without registering and repeat the admin list call to observe `403` for member/plain accounts or `200` for `demo.staff@example.com`.
 
 ## HTTPie: session file
 
